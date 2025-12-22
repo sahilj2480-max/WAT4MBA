@@ -1,22 +1,27 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WAT4MBA</title>
+
+    <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #fcfdff;
             color: #0f172a;
-            letter-spacing: -0.02em; /* Tighter letter spacing for professional look */
+            letter-spacing: -0.02em;
         }
         .font-display {
             font-family: 'Playfair Display', serif;
-            letter-spacing: -0.04em; /* Even tighter for headers */
+            letter-spacing: -0.04em;
         }
         @keyframes glow {
             0%, 100% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.2); }
@@ -32,7 +37,6 @@
         .animate-float {
             animation: float 4s infinite ease-in-out;
         }
-        /* Custom scrollbar for professional aesthetics */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -46,22 +50,27 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
-        /* Ensure the textarea scroller doesn't shift the layout */
         textarea {
             scrollbar-gutter: stable;
         }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3"
-  }
-}
-</script>
+
+    <!-- Import map (KEEP AS IS) -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "react": "https://esm.sh/react@^19.2.3"
+      }
+    }
+    </script>
 </head>
+
 <body>
     <div id="root"></div>
+
+    <!-- 🔴 THIS WAS MISSING — THIS FIXES THE BLANK PAGE -->
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>
