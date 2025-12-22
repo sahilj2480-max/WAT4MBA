@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { AppState, Topic, WATFeedback, UserStats, Badge } from './types';
 import { WAT_TOPICS } from './constants/topics';
 import { evaluateWAT } from './services/evaluator';
@@ -378,6 +379,8 @@ const App: React.FC = () => {
         {!isAnalyzing && state === AppState.WRITING && renderWritingArena()}
         {!isAnalyzing && state === AppState.REPORT && renderReport()}
       </main>
+
+      <Analytics />
 
       <footer className="fixed bottom-0 w-full p-8 text-center text-[10px] text-slate-300 font-black uppercase tracking-[0.8em] z-0 pointer-events-none bg-gradient-to-t from-slate-50 to-transparent">OFFLINE SECURE • NO ADS • NO LIMITS</footer>
     </div>
