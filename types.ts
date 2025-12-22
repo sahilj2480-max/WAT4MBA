@@ -25,7 +25,8 @@ export enum AppState {
   WELCOME = 'WELCOME',
   FLIPPER = 'FLIPPER',
   WRITING = 'WRITING',
-  REPORT = 'REPORT'
+  REPORT = 'REPORT',
+  ABOUT = 'ABOUT'
 }
 
 export interface Badge {

@@ -156,7 +156,7 @@ const App: React.FC = () => {
   };
 
   const renderProgressBar = () => {
-    if (state === AppState.WELCOME || isAnalyzing) return null;
+    if (state === AppState.WELCOME || state === AppState.ABOUT || isAnalyzing) return null;
     
     const steps = [
       { id: AppState.FLIPPER, label: 'Selection' },
@@ -215,6 +215,29 @@ const App: React.FC = () => {
       <button onClick={() => setState(AppState.FLIPPER)} className="group relative px-20 py-8 bg-indigo-900 dark:bg-indigo-600 text-white rounded-[40px] font-extrabold text-3xl hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-xl transform hover:-translate-y-2 active:translate-y-0 active:scale-95">
         <span className="relative z-10 flex items-center gap-6">CRACK THE WAT <span className="text-4xl group-hover:translate-x-3 transition-transform">→</span></span>
       </button>
+    </div>
+  );
+
+  const renderAbout = () => (
+    <div className="max-w-4xl mx-auto px-6 py-20 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+      <div className="bg-white dark:bg-slate-900 p-12 md:p-20 rounded-[60px] shadow-3xl border-4 border-slate-50 dark:border-slate-800 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-10 opacity-5 text-8xl font-black pointer-events-none">ABOUT</div>
+        <h2 className="text-5xl font-display text-slate-900 dark:text-white mb-10 tracking-tighter">Mission: Practice with Precision</h2>
+        <div className="space-y-8">
+          <p className="text-2xl text-slate-700 dark:text-slate-300 leading-relaxed font-medium tracking-tight">
+            Hello, I’m Sahil an MBA aspirant just like you. I built <span className="text-indigo-600 dark:text-indigo-400 font-black">wat4mba</span> to help prepare for one of the most important stages of the Indian MBA selection process: the Written Ability Test.
+          </p>
+          <p className="text-2xl text-slate-700 dark:text-slate-300 leading-relaxed font-medium tracking-tight">
+            After CAT, WAT plays a critical role in shortlisting and final conversion, yet focused practice platforms are rare. <span className="text-indigo-600 dark:text-indigo-400 font-black">wat4mba</span> bridges this gap with timed practice on high-frequency, MBA-relevant topics.
+          </p>
+        </div>
+        <button 
+          onClick={() => setState(AppState.WELCOME)} 
+          className="mt-14 px-12 py-6 bg-indigo-900 dark:bg-indigo-600 text-white rounded-3xl font-black text-xl hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-xl transform hover:-translate-y-1"
+        >
+          BACK TO HOME
+        </button>
+      </div>
     </div>
   );
 
@@ -302,7 +325,6 @@ const App: React.FC = () => {
   const renderReport = () => {
     if (!feedback || !selectedTopic) return null;
 
-    // Threshold changed to 60 words
     const isLowContent = feedback.wordCount < 60;
 
     return (
@@ -315,7 +337,6 @@ const App: React.FC = () => {
           <button onClick={() => { setState(AppState.WELCOME); setContent(''); setSelectedTopic(null); }} className="group px-12 py-7 bg-indigo-900 dark:bg-indigo-600 text-white rounded-3xl font-black text-xl hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-xl flex items-center gap-6 transform hover:-translate-y-2 tracking-tight">START OVER <span className="group-hover:translate-x-3 transition-transform text-3xl">→</span></button>
         </div>
 
-        {/* Updated Low Content Alert Box */}
         {isLowContent && (
           <div className="mb-8 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-900/50 p-8 rounded-[32px] flex flex-col md:flex-row items-center gap-6 animate-in slide-in-from-top-6 duration-700 shadow-xl relative overflow-hidden">
              <div className="w-16 h-16 bg-amber-400 dark:bg-amber-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg text-3xl">🧩</div>
@@ -339,7 +360,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Only show strengths and weaknesses if content is sufficient */}
         {!isLowContent && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-16">
             <FeedbackList title="Cognitive Strengths" items={feedback.positives} type="positive" />
@@ -430,27 +450,42 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen selection:bg-indigo-600 selection:text-white pb-32 overflow-x-hidden bg-white dark:bg-dark-bg transition-colors duration-300">
-      <nav className="px-8 py-6 flex justify-between items-center max-w-7xl mx-auto border-b-2 border-slate-50 dark:border-slate-900 bg-white/70 dark:bg-dark-bg/70 backdrop-blur-3xl sticky top-0 z-50">
-        <div className="flex items-center cursor-pointer group" onClick={() => setState(AppState.WELCOME)}>
-          <div className="bg-indigo-900 dark:bg-indigo-600 px-5 py-2.5 rounded-xl text-white font-black text-xl shadow-lg group-hover:bg-black dark:group-hover:bg-indigo-700 transition-all tracking-tighter">WAT</div>
-          <span className="font-display text-4xl font-black text-slate-900 dark:text-white tracking-tighter transition-colors ml-1">4MBA</span>
+      <nav className="px-8 py-6 flex flex-col items-center max-w-7xl mx-auto sticky top-0 z-50 bg-white/70 dark:bg-dark-bg/70 backdrop-blur-3xl">
+        <div className="w-full flex justify-between items-center mb-6">
+          <div className="flex items-center cursor-pointer group" onClick={() => setState(AppState.WELCOME)}>
+            <div className="flex items-center font-black tracking-tighter transition-all">
+              <div className="bg-indigo-900 dark:bg-indigo-600 px-4 py-2 rounded-xl text-white text-xl shadow-lg group-hover:bg-black dark:group-hover:bg-indigo-700 mr-2">WAT</div>
+              <span className="text-3xl font-display text-slate-900 dark:text-white leading-none">4MBA</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={() => setState(AppState.ABOUT)}
+              className="px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors border-2 border-slate-100 dark:border-slate-800 hover:border-indigo-600 dark:hover:border-indigo-400"
+            >
+              About
+            </button>
+            
+            {/* Dark Mode Toggle */}
+            <div className="bg-slate-100 dark:bg-slate-900 p-1 rounded-[20px] shadow-inner border border-slate-200 dark:border-slate-800 flex items-center gap-1">
+              <button 
+                onClick={() => setIsDarkMode(false)}
+                className={`px-4 py-2 rounded-[16px] text-[10px] font-black uppercase tracking-widest transition-all ${!isDarkMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'}`}
+              >
+                Light
+              </button>
+              <button 
+                onClick={() => setIsDarkMode(true)}
+                className={`px-4 py-2 rounded-[16px] text-[10px] font-black uppercase tracking-widest transition-all ${isDarkMode ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-500 dark:text-slate-500 hover:text-slate-400 dark:hover:text-slate-300'}`}
+              >
+                Dark
+              </button>
+            </div>
+          </div>
         </div>
-        
-        {/* Dark Mode Toggle */}
-        <div className="bg-slate-100 dark:bg-slate-900 p-1 rounded-[20px] shadow-inner border border-slate-200 dark:border-slate-800 flex items-center gap-1">
-          <button 
-            onClick={() => setIsDarkMode(false)}
-            className={`px-4 py-2 rounded-[16px] text-[10px] font-black uppercase tracking-widest transition-all ${!isDarkMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'}`}
-          >
-            Light
-          </button>
-          <button 
-            onClick={() => setIsDarkMode(true)}
-            className={`px-4 py-2 rounded-[16px] text-[10px] font-black uppercase tracking-widest transition-all ${isDarkMode ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-500 dark:text-slate-500 hover:text-slate-400 dark:hover:text-slate-300'}`}
-          >
-            Dark
-          </button>
-        </div>
+        {/* Nav Separator Line */}
+        <div className="w-full h-[1px] bg-slate-100 dark:bg-slate-800" />
       </nav>
 
       {renderProgressBar()}
@@ -461,6 +496,7 @@ const App: React.FC = () => {
         {!isAnalyzing && state === AppState.FLIPPER && renderFlipperScreen()}
         {!isAnalyzing && state === AppState.WRITING && renderWritingArena()}
         {!isAnalyzing && state === AppState.REPORT && renderReport()}
+        {!isAnalyzing && state === AppState.ABOUT && renderAbout()}
       </main>
 
       <footer className="fixed bottom-0 w-full p-8 text-center text-[10px] text-slate-300 dark:text-slate-700 font-black uppercase tracking-[0.8em] z-0 pointer-events-none bg-gradient-to-t from-white dark:from-dark-bg to-transparent">SECURE ENVIRONMENT • OFFLINE PROCESSING • ZERO LATENCY</footer>
