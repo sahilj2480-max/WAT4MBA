@@ -1,42 +1,37 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WAT4MBA</title>
-<meta name="google-site-verification" content="XfpMLTurYlVenZmFAK1-8xNCD_ms_5UO3Y3sJqNKrx4" />
-    <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
-
-    <!-- Styles -->
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'dark-bg': '#121826',
+              'dark-card': '#1e293b',
+              'dark-border': '#334155'
+            }
+          }
+        }
+      }
+    </script>
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #fcfdff;
-            color: #0f172a;
             letter-spacing: -0.02em;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         .font-display {
             font-family: 'Playfair Display', serif;
             letter-spacing: -0.04em;
         }
-        @keyframes glow {
-            0%, 100% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.2); }
-            50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
-        }
-        .animate-glow {
-            animation: glow 3s infinite ease-in-out;
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
-        .animate-float {
-            animation: float 4s infinite ease-in-out;
-        }
+        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -47,30 +42,24 @@
             background: #cbd5e1;
             border-radius: 20px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
         }
         textarea {
             scrollbar-gutter: stable;
         }
     </style>
-
-    <!-- Import map (KEEP AS IS) -->
-    <script type="importmap">
-    {
-      "imports": {
-        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-        "react/": "https://esm.sh/react@^19.2.3/",
-        "react": "https://esm.sh/react@^19.2.3"
-      }
-    }
-    </script>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3"
+  }
+}
+</script>
 </head>
-
-<body>
+<body class="bg-[#fcfdff] dark:bg-dark-bg text-[#0f172a] dark:text-slate-100">
     <div id="root"></div>
-
-    <!-- 🔴 THIS WAS MISSING — THIS FIXES THE BLANK PAGE -->
-    <script type="module" src="/index.tsx"></script>
 </body>
 </html>
