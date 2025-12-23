@@ -159,43 +159,63 @@ const App: React.FC = () => {
     if (state === AppState.WELCOME || state === AppState.ABOUT || isAnalyzing) return null;
     
     const steps = [
-      { id: AppState.FLIPPER, label: 'Selection' },
-      { id: AppState.WRITING, label: 'Execution' },
-      { id: AppState.REPORT, label: 'Analysis' }
+      { id: AppState.FLIPPER, label: 'Topic Selection', icon: '🎯' },
+      { id: AppState.WRITING, label: 'Active Writing', icon: '✍️' },
+      { id: AppState.REPORT, label: 'Performance Analysis', icon: '📊' }
     ];
     
     const currentIndex = steps.findIndex(s => s.id === state);
 
     return (
-      <div className="max-w-6xl mx-auto px-6 mt-1 mb-1">
-        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-indigo-900/30 p-2 md:p-3 rounded-lg shadow-sm relative overflow-hidden flex items-center justify-between">
-          <div className="flex gap-4 md:gap-10 w-full">
-            {steps.map((step, index) => {
-              const isCompleted = index < currentIndex;
-              const isActive = index === currentIndex;
-              
-              return (
-                <div key={step.id} className="flex-1">
-                  <div className={`h-1 rounded-full transition-all duration-700 ease-out mb-1
-                    ${isCompleted ? 'bg-emerald-500' : 
-                      isActive ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-slate-200 dark:bg-slate-800'}
-                  `} />
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] md:text-[11px] font-black uppercase transition-colors tracking-widest
-                      ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-600'}
+      <div className="max-w-6xl mx-auto px-6 mt-8 mb-6">
+        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-[32px] border-2 border-slate-100 dark:border-slate-800 shadow-xl flex items-center justify-between gap-3 overflow-hidden">
+          {steps.map((step, index) => {
+            const isCompleted = index < currentIndex;
+            const isActive = index === currentIndex;
+            
+            return (
+              <React.Fragment key={step.id}>
+                <div className={`relative flex-1 flex items-center gap-4 px-6 py-4 rounded-[24px] transition-all duration-500
+                  ${isActive ? 'bg-indigo-600 shadow-indigo-200 dark:shadow-indigo-900/40 shadow-lg' : 
+                    isCompleted ? 'bg-emerald-50 dark:bg-emerald-900/10' : 'bg-transparent'}
+                `}>
+                  {/* Status Bubble */}
+                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl transition-all duration-500
+                    ${isActive ? 'bg-white shadow-md' : 
+                      isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}
+                  `}>
+                    {isCompleted ? '✓' : step.icon}
+                  </div>
+                  
+                  {/* Label Group */}
+                  <div className="flex flex-col">
+                    <span className={`text-[10px] font-bold uppercase tracking-[0.25em] mb-0.5 transition-colors
+                      ${isActive ? 'text-indigo-100' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}
                     `}>
                       PHASE 0{index + 1}
                     </span>
-                    <span className={`text-[11px] md:text-[12px] font-extrabold tracking-tight transition-all
-                      ${isActive ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-600'}
+                    <span className={`text-[15px] font-black tracking-tight transition-colors whitespace-nowrap
+                      ${isActive ? 'text-white' : isCompleted ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'}
                     `}>
                       {step.label}
                     </span>
                   </div>
+
+                  {isActive && (
+                    <div className="absolute inset-0 rounded-[24px] ring-4 ring-indigo-500/20 animate-pulse pointer-events-none" />
+                  )}
                 </div>
-              );
-            })}
-          </div>
+
+                {index < steps.length - 1 && (
+                  <div className="flex gap-2 px-1">
+                    {[1, 2].map(i => (
+                      <div key={i} className={`w-2 h-2 rounded-full transition-colors duration-500 ${index < currentIndex ? 'bg-emerald-300 dark:bg-emerald-800' : 'bg-slate-200 dark:bg-slate-800'}`} />
+                    ))}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
     );
@@ -206,10 +226,10 @@ const App: React.FC = () => {
       <div className="mb-10 group cursor-default">
         <div className="text-9xl mb-10 transform group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl">🏏</div>
         <h1 className="text-6xl md:text-8xl font-display text-slate-900 dark:text-white mb-8 max-w-5xl leading-tight tracking-tighter">
-          First part of the exam <br/> is done. <span className="text-indigo-600 dark:text-indigo-400">Now crack this.</span>
+          Shortlisted? <br className="hidden md:block" /> <span className="text-indigo-600 dark:text-indigo-400">This is your WAT prep.</span>
         </h1>
         <p className="text-2xl text-slate-500 dark:text-slate-400 max-w-3xl mx-auto mb-14 leading-relaxed font-medium tracking-tight">
-          Written Ability Test (WAT) is where critical thinking meets structure. <br className="hidden md:block" /> Practice with high-intensity topics and get instant professional audits.
+          Timed WAT practice with relevant topics, a distraction-free editor, and clear, actionable feedback.
         </p>
       </div>
       <button onClick={() => setState(AppState.FLIPPER)} className="group relative px-20 py-8 bg-indigo-900 dark:bg-indigo-600 text-white rounded-[40px] font-extrabold text-3xl hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-xl transform hover:-translate-y-2 active:translate-y-0 active:scale-95">
@@ -450,39 +470,41 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen selection:bg-indigo-600 selection:text-white pb-32 overflow-x-hidden bg-white dark:bg-dark-bg transition-colors duration-300">
-      <nav className="px-8 py-4 flex flex-col items-center max-w-7xl mx-auto sticky top-0 z-50 bg-white/70 dark:bg-dark-bg/70 backdrop-blur-3xl border-b border-slate-100 dark:border-slate-800">
-        <div className="w-full flex justify-between items-center">
+      <nav className="w-full bg-white/80 dark:bg-dark-bg/80 backdrop-blur-3xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-8 h-24 flex justify-between items-center">
           <div className="flex items-center cursor-pointer group" onClick={() => setState(AppState.WELCOME)}>
             <div className="flex items-center font-black tracking-tighter transition-all">
-              <div className="bg-indigo-900 dark:bg-indigo-600 h-10 px-3 py-1 rounded-lg text-white text-lg shadow-lg group-hover:bg-black dark:group-hover:bg-indigo-700 mr-2 flex items-center justify-center">WAT</div>
-              <span className="text-3xl font-display text-slate-900 dark:text-white leading-none h-10 flex items-center">4MBA</span>
+              <div className="bg-indigo-900 dark:bg-indigo-600 px-4 py-2 rounded-xl text-white text-xl shadow-lg group-hover:bg-black dark:group-hover:bg-indigo-700 mr-3">WAT</div>
+              <span className="text-3xl font-display text-slate-900 dark:text-white leading-none">4MBA</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             <button 
               onClick={() => setState(AppState.ABOUT)}
-              className="px-5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors border border-slate-200 dark:border-slate-800 hover:border-indigo-600 dark:hover:border-indigo-400"
+              className="h-12 px-8 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all border-2 border-slate-100 dark:border-slate-800 hover:border-indigo-600 dark:hover:border-indigo-400 bg-white/50 dark:bg-slate-900/50"
             >
               About
             </button>
             
-            <div className="bg-slate-100 dark:bg-slate-900 p-1 rounded-xl shadow-inner border border-slate-200 dark:border-slate-800 flex items-center gap-1">
+            <div className="bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl shadow-inner border border-slate-200 dark:border-slate-800 flex items-center gap-1.5 h-12">
               <button 
                 onClick={() => setIsDarkMode(false)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${!isDarkMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'}`}
+                className={`h-full px-5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!isDarkMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 Light
               </button>
               <button 
                 onClick={() => setIsDarkMode(true)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${isDarkMode ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm' : 'text-slate-500 dark:text-slate-500 hover:text-slate-400 dark:hover:text-slate-300'}`}
+                className={`h-full px-5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isDarkMode ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
               >
                 Dark
               </button>
             </div>
           </div>
         </div>
+        {/* Distinction Line */}
+        <div className="w-full h-[1px] bg-slate-100 dark:bg-slate-800" />
       </nav>
 
       {renderProgressBar()}
