@@ -23,6 +23,7 @@ export interface Topic {
 
 export enum AppState {
   WELCOME = 'WELCOME',
+  PREPARING = 'PREPARING',
   FLIPPER = 'FLIPPER',
   WRITING = 'WRITING',
   REPORT = 'REPORT',

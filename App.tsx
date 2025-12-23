@@ -20,6 +20,21 @@ const INITIAL_STATS: UserStats = {
   badges: []
 };
 
+// Symmetrical Arrow Component for consistent UI
+const SymmetricalArrow = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2.5" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
+
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(AppState.WELCOME);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
@@ -57,6 +72,16 @@ const App: React.FC = () => {
     }
     localStorage.setItem('wat_dark_mode', isDarkMode.toString());
   }, [isDarkMode]);
+
+  // Handle preparing to flipper transition
+  useEffect(() => {
+    if (state === AppState.PREPARING) {
+      const timer = setTimeout(() => {
+        setState(AppState.FLIPPER);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [state]);
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [flipperIndex, setFlipperIndex] = useState(0);
@@ -156,7 +181,7 @@ const App: React.FC = () => {
   };
 
   const renderProgressBar = () => {
-    if (state === AppState.WELCOME || state === AppState.ABOUT || isAnalyzing) return null;
+    if (state === AppState.WELCOME || state === AppState.PREPARING || state === AppState.ABOUT || isAnalyzing) return null;
     
     const steps = [
       { id: AppState.FLIPPER, label: 'Topic Selection', icon: '🎯' },
@@ -222,19 +247,113 @@ const App: React.FC = () => {
   };
 
   const renderWelcome = () => (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-6 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-      <div className="mb-10 group cursor-default">
-        <div className="text-9xl mb-10 transform group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl">🏏</div>
-        <h1 className="text-6xl md:text-8xl font-display text-slate-900 dark:text-white mb-8 max-w-5xl leading-tight tracking-tighter">
-          Shortlisted? <br className="hidden md:block" /> <span className="text-indigo-600 dark:text-indigo-400">This is your WAT prep.</span>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-6rem)] text-center p-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 overflow-hidden">
+      <div className="mb-2 group cursor-default max-w-5xl">
+        {/* Dynamic Writing Logo */}
+        <div className="relative mb-6 md:mb-10 inline-block transform group-hover:scale-105 transition-transform duration-500">
+           <div className="text-8xl md:text-9xl animate-float drop-shadow-[0_25px_35px_rgba(79,70,229,0.3)] select-none">
+              🖋️
+           </div>
+           <div className="absolute -top-4 -right-4 text-4xl md:text-5xl animate-scribble">
+              ✨
+           </div>
+        </div>
+
+        <h1 className="text-4xl md:text-7xl font-display text-slate-900 dark:text-white mb-6 md:mb-10 leading-[1.15] tracking-tighter">
+          Shortlisted? <br className="hidden md:block" /> 
+          <span className="block mt-4 md:mt-6 text-indigo-600 dark:text-indigo-400 text-2xl md:text-5xl font-sans font-black tracking-tight leading-tight">
+            WAT isn’t separate from GD-PI. <br className="hidden md:block" /> It’s the first place your thinking gets evaluated.
+          </span>
         </h1>
-        <p className="text-2xl text-slate-500 dark:text-slate-400 max-w-3xl mx-auto mb-14 leading-relaxed font-medium tracking-tight">
-          Timed WAT practice with relevant topics, a distraction-free editor, and clear, actionable feedback.
-        </p>
+        
+        {/* Perfectly Left-Aligned Feature Points with Symmetrical Refined UI */}
+        <div className="flex flex-col items-start gap-5 md:gap-7 mb-10 md:mb-12 w-fit mx-auto">
+          {[
+            "Timed WATs on recent & relevant topics",
+            "Clear feedback you can act on immediately"
+          ].map((text, idx) => (
+            <div key={idx} className="flex items-center gap-5 md:gap-6 text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-200 group/point cursor-default transition-all">
+               <div className="relative flex items-center justify-center shrink-0">
+                  {/* Outer Ring Effect */}
+                  <div className="absolute inset-0 rounded-full bg-indigo-500/10 dark:bg-indigo-400/10 scale-125 group-hover/point:scale-150 transition-transform duration-500 opacity-0 group-hover/point:opacity-100" />
+                  
+                  {/* Main Circle Badge - Refined Symmetry */}
+                  <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-slate-900 dark:bg-slate-900 flex items-center justify-center text-white dark:text-white shadow-[0_4px_12px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] border border-slate-700/50 dark:border-slate-700 z-10 group-hover/point:rotate-[360deg] transition-all duration-700">
+                    <SymmetricalArrow className="w-5 h-5 md:w-7 md:h-7" />
+                  </div>
+               </div>
+               
+               {/* Text with subtle underline effect on hover */}
+               <span className="relative text-left group-hover/point:text-indigo-600 dark:group-hover/point:text-indigo-400 transition-colors py-1">
+                 {text}
+                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600/30 dark:bg-indigo-400/30 group-hover/point:w-full transition-all duration-500" />
+               </span>
+            </div>
+          ))}
+        </div>
       </div>
-      <button onClick={() => setState(AppState.FLIPPER)} className="group relative px-20 py-8 bg-indigo-900 dark:bg-indigo-600 text-white rounded-[40px] font-extrabold text-3xl hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-xl transform hover:-translate-y-2 active:translate-y-0 active:scale-95">
-        <span className="relative z-10 flex items-center gap-6">CRACK THE WAT <span className="text-4xl group-hover:translate-x-3 transition-transform">→</span></span>
+
+      <button onClick={() => setState(AppState.PREPARING)} className="group relative px-12 py-6 md:px-16 md:py-8 bg-indigo-900 dark:bg-indigo-600 text-white rounded-[28px] md:rounded-[32px] font-black text-xl md:text-3xl hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-2xl transform hover:-translate-y-2 active:translate-y-0 active:scale-95 flex items-center gap-6 md:gap-8 mb-4">
+        Start WAT Practice 
+        <div className="w-10 h-10 md:w-12 md:h-12 bg-white/10 rounded-full flex items-center justify-center group-hover:translate-x-2 transition-transform border border-white/20">
+          <SymmetricalArrow className="w-5 h-5 md:w-7 md:h-7" />
+        </div>
       </button>
+
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(-5deg); }
+          50% { transform: translateY(-15px) rotate(5deg); }
+        }
+        @keyframes sparkle {
+          0%, 100% { transform: scale(1) opacity(1); filter: blur(0px); }
+          50% { transform: scale(1.5) opacity(0.5); filter: blur(2px); }
+        }
+        .animate-float {
+          animation: float 4s ease-in-out infinite;
+        }
+        .animate-scribble {
+          animation: sparkle 2s ease-in-out infinite;
+        }
+      `}</style>
+    </div>
+  );
+
+  const renderPreparing = () => (
+    <div className="fixed inset-0 bg-white dark:bg-dark-bg z-[150] flex flex-col items-center justify-center p-12 animate-in fade-in duration-500">
+      <div className="flex flex-col items-center gap-10 max-w-md w-full">
+        {/* Animated Loading Element */}
+        <div className="relative">
+          <div className="w-32 h-32 border-4 border-slate-100 dark:border-slate-800 rounded-full" />
+          <div className="absolute inset-0 w-32 h-32 border-4 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center text-5xl drop-shadow-xl">🖋️</div>
+        </div>
+        
+        {/* Loading Text */}
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight animate-pulse">
+            Preparing your WAT environment…
+          </h2>
+          <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">
+            Synchronizing recently curated topics
+          </p>
+        </div>
+
+        {/* Linear Progress Bar */}
+        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
+          <div className="h-full bg-indigo-600 dark:bg-indigo-400 animate-loading-bar" />
+        </div>
+      </div>
+      <style>{`
+        @keyframes loading-bar {
+          0% { width: 0%; transform: translateX(-100%); }
+          50% { width: 50%; transform: translateX(50%); }
+          100% { width: 100%; transform: translateX(200%); }
+        }
+        .animate-loading-bar {
+          animation: loading-bar 2s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+        }
+      `}</style>
     </div>
   );
 
@@ -512,6 +631,7 @@ const App: React.FC = () => {
       <main className="mt-2">
         {isAnalyzing && renderAnalyzing()}
         {!isAnalyzing && state === AppState.WELCOME && renderWelcome()}
+        {!isAnalyzing && state === AppState.PREPARING && renderPreparing()}
         {!isAnalyzing && state === AppState.FLIPPER && renderFlipperScreen()}
         {!isAnalyzing && state === AppState.WRITING && renderWritingArena()}
         {!isAnalyzing && state === AppState.REPORT && renderReport()}
