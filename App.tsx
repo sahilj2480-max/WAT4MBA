@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { AppState, Topic, WATFeedback, UserStats, Badge } from './types';
+import { AppState, Topic, WATFeedback, UserStats, Flashcard } from './types';
 import { WAT_TOPICS } from './constants/topics';
+import { FLASHCARDS } from './constants/flashcards';
 import { evaluateWAT } from './services/evaluator';
 
 const WRITING_QUOTES = [
@@ -20,7 +21,6 @@ const INITIAL_STATS: UserStats = {
   badges: []
 };
 
-// Symmetrical Arrow Component for consistent UI
 const SymmetricalArrow = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg 
     viewBox="0 0 24 24" 
@@ -33,6 +33,19 @@ const SymmetricalArrow = ({ className = "w-6 h-6" }: { className?: string }) => 
   >
     <path d="M5 12h14M12 5l7 7-7 7" />
   </svg>
+);
+
+const Logo = ({ onClick }: { onClick: () => void }) => (
+  <div 
+    className="relative flex items-center cursor-pointer group px-4 py-1.5 border-2 border-slate-900 dark:border-white rounded-xl bg-white dark:bg-slate-950 transition-all duration-300 hover:shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(129,140,248,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none" 
+    onClick={onClick}
+  >
+    <div className="flex items-baseline font-black tracking-tighter">
+      <span className="text-2xl md:text-3xl text-slate-900 dark:text-white font-sans">WAT</span>
+      <span className="text-4xl md:text-5xl text-indigo-600 dark:text-indigo-400 mx-0.5 transform group-hover:scale-110 transition-transform italic font-sans">4</span>
+      <span className="text-2xl md:text-3xl text-slate-900 dark:text-white font-sans">MBA</span>
+    </div>
+  </div>
 );
 
 const App: React.FC = () => {
@@ -49,8 +62,13 @@ const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('wat_dark_mode') === 'true';
   });
+
+  // FlashBriefs state
+  const [flashcardIndex, setFlashcardIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [activeFlashCategory, setActiveFlashCategory] = useState<string>('All');
+  const [savedCardIds, setSavedCardIds] = useState<Set<string>>(new Set());
   
-  // WPM Tracking Refs
   const lastActivityTimeRef = useRef<number>(0);
   const activeWritingTimeRef = useRef<number>(0);
   const hasStartedTypingRef = useRef<boolean>(false);
@@ -67,18 +85,19 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
     } else {
+      document.documentElement.classList.add('light');
       document.documentElement.classList.remove('dark');
     }
     localStorage.setItem('wat_dark_mode', isDarkMode.toString());
   }, [isDarkMode]);
 
-  // Handle preparing to flipper transition
   useEffect(() => {
     if (state === AppState.PREPARING) {
       const timer = setTimeout(() => {
         setState(AppState.FLIPPER);
-      }, 2000);
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [state]);
@@ -109,22 +128,22 @@ const App: React.FC = () => {
     setIsTimerRunning(true);
     hasStartedTypingRef.current = false;
     activeWritingTimeRef.current = 0;
-    lastActivityTimeRef.current = 0;
+    lastActivityTimeRef.current = Date.now();
   };
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const now = Date.now();
+    const time = Date.now();
     const newContent = e.target.value;
     
     if (!hasStartedTypingRef.current && newContent.length > 0) {
       hasStartedTypingRef.current = true;
-      lastActivityTimeRef.current = now;
+      lastActivityTimeRef.current = time;
     } else if (hasStartedTypingRef.current) {
-      const diff = (now - lastActivityTimeRef.current) / 1000;
+      const diff = (time - lastActivityTimeRef.current) / 1000;
       if (diff < 20) {
         activeWritingTimeRef.current += diff;
       }
-      lastActivityTimeRef.current = now;
+      lastActivityTimeRef.current = time;
     }
     
     setContent(newContent);
@@ -146,11 +165,9 @@ const App: React.FC = () => {
     setIsTimerRunning(false);
     setIsAnalyzing(true);
     setCurrentQuote(WRITING_QUOTES[Math.floor(Math.random() * WRITING_QUOTES.length)]);
-    
     const totalActiveSeconds = activeWritingTimeRef.current;
     const result = evaluateWAT(content, selectedTopic?.title || "", totalActiveSeconds);
     setFeedback(result);
-    
     setTimeout(() => {
       setIsAnalyzing(false);
       setState(AppState.REPORT);
@@ -173,68 +190,62 @@ const App: React.FC = () => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const getWPMInterpretation = (wpm: number) => {
-    if (wpm === 0) return "Insufficient data collected.";
-    if (wpm < 20) return "A moderate typing speed indicates that planning before execution may improve overall output quality.";
-    if (wpm < 35) return "Your average typing speed for this attempt was comfortable, allowing more focus on clarity and coherence.";
-    return "High execution efficiency suggests you have ample time to review and polish your draft.";
+  const filteredFlashBriefs = FLASHCARDS.filter(card => {
+    const matchesCategory = activeFlashCategory === 'All' || card.category === activeFlashCategory;
+    return matchesCategory;
+  });
+
+  const toggleSaveCard = (id: string) => {
+    const newSaved = new Set(savedCardIds);
+    if (newSaved.has(id)) newSaved.delete(id);
+    else newSaved.add(id);
+    setSavedCardIds(newSaved);
   };
 
   const renderProgressBar = () => {
-    if (state === AppState.WELCOME || state === AppState.PREPARING || state === AppState.ABOUT || isAnalyzing) return null;
-    
+    if (state === AppState.WELCOME || state === AppState.PREPARING || state === AppState.ABOUT || state === AppState.FLASHBRIEFS || isAnalyzing) return null;
     const steps = [
       { id: AppState.FLIPPER, label: 'Topic Selection', icon: '🎯' },
       { id: AppState.WRITING, label: 'Active Writing', icon: '✍️' },
       { id: AppState.REPORT, label: 'Performance Analysis', icon: '📊' }
     ];
-    
     const currentIndex = steps.findIndex(s => s.id === state);
-
     return (
-      <div className="max-w-6xl mx-auto px-6 mt-8 mb-6">
-        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-[32px] border-2 border-slate-100 dark:border-slate-800 shadow-xl flex items-center justify-between gap-3 overflow-hidden">
+      <div className="w-full px-6 mt-4 mb-4">
+        <div className="bg-white dark:bg-slate-900 p-2 rounded-[24px] border border-slate-300 dark:border-slate-700 shadow-xl flex items-center justify-between gap-2 overflow-hidden">
           {steps.map((step, index) => {
             const isCompleted = index < currentIndex;
             const isActive = index === currentIndex;
-            
             return (
               <React.Fragment key={step.id}>
-                <div className={`relative flex-1 flex items-center gap-4 px-6 py-4 rounded-[24px] transition-all duration-500
-                  ${isActive ? 'bg-indigo-600 shadow-indigo-200 dark:shadow-indigo-900/40 shadow-lg' : 
+                <div className={`relative flex-1 flex items-center gap-4 px-5 py-3 rounded-[18px] transition-all duration-500
+                  ${isActive ? 'bg-indigo-600 shadow-lg' : 
                     isCompleted ? 'bg-emerald-50 dark:bg-emerald-900/10' : 'bg-transparent'}
                 `}>
-                  {/* Status Bubble */}
-                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl transition-all duration-500
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-all duration-500
                     ${isActive ? 'bg-white shadow-md' : 
                       isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}
                   `}>
                     {isCompleted ? '✓' : step.icon}
                   </div>
-                  
-                  {/* Label Group */}
                   <div className="flex flex-col">
-                    <span className={`text-[10px] font-bold uppercase tracking-[0.25em] mb-0.5 transition-colors
+                    <span className={`text-[11px] font-black uppercase tracking-wider mb-0.5 transition-colors
                       ${isActive ? 'text-indigo-100' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}
                     `}>
                       PHASE 0{index + 1}
                     </span>
-                    <span className={`text-[15px] font-black tracking-tight transition-colors whitespace-nowrap
+                    <span className={`text-[14px] font-bold tracking-tight transition-colors whitespace-nowrap
                       ${isActive ? 'text-white' : isCompleted ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'}
                     `}>
                       {step.label}
                     </span>
                   </div>
-
-                  {isActive && (
-                    <div className="absolute inset-0 rounded-[24px] ring-4 ring-indigo-500/20 animate-pulse pointer-events-none" />
-                  )}
+                  {isActive && <div className="absolute inset-0 rounded-[18px] ring-2 ring-indigo-500/20 animate-pulse pointer-events-none" />}
                 </div>
-
                 {index < steps.length - 1 && (
-                  <div className="flex gap-2 px-1">
+                  <div className="flex gap-1.5 px-0.5">
                     {[1, 2].map(i => (
-                      <div key={i} className={`w-2 h-2 rounded-full transition-colors duration-500 ${index < currentIndex ? 'bg-emerald-300 dark:bg-emerald-800' : 'bg-slate-200 dark:bg-slate-800'}`} />
+                      <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${index < currentIndex ? 'bg-emerald-300 dark:bg-emerald-800' : 'bg-slate-200 dark:bg-slate-800'}`} />
                     ))}
                   </div>
                 )}
@@ -247,147 +258,260 @@ const App: React.FC = () => {
   };
 
   const renderWelcome = () => (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-6rem)] text-center p-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 overflow-hidden">
-      <div className="mb-2 group cursor-default max-w-5xl">
-        {/* Dynamic Writing Logo */}
-        <div className="relative mb-6 md:mb-10 inline-block transform group-hover:scale-105 transition-transform duration-500">
-           <div className="text-8xl md:text-9xl animate-float drop-shadow-[0_25px_35px_rgba(79,70,229,0.3)] select-none">
+    <div className="relative flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 overflow-hidden">
+      
+      <div className="mb-2 group cursor-default max-w-5xl z-10 pointer-events-none">
+        <div className="relative mb-6 md:mb-8 inline-block transform group-hover:scale-105 transition-transform duration-500 pointer-events-auto">
+           <div className="text-8xl md:text-9xl animate-logo-float drop-shadow-[0_25px_35px_rgba(79,70,229,0.3)] select-none">
               🖋️
-           </div>
-           <div className="absolute -top-4 -right-4 text-4xl md:text-5xl animate-scribble">
-              ✨
            </div>
         </div>
 
-        <h1 className="text-4xl md:text-7xl font-display text-slate-900 dark:text-white mb-6 md:mb-10 leading-[1.15] tracking-tighter">
+        <h1 className="text-4xl md:text-7xl font-display text-slate-900 dark:text-white mb-6 md:mb-10 leading-[1.1] tracking-tighter pointer-events-auto">
           Shortlisted? <br className="hidden md:block" /> 
           <span className="block mt-4 md:mt-6 text-indigo-600 dark:text-indigo-400 text-2xl md:text-5xl font-sans font-black tracking-tight leading-tight">
             WAT isn’t separate from GD-PI. <br className="hidden md:block" /> It’s the first place your thinking gets evaluated.
           </span>
         </h1>
         
-        {/* Perfectly Left-Aligned Feature Points with Symmetrical Refined UI */}
-        <div className="flex flex-col items-start gap-5 md:gap-7 mb-10 md:mb-12 w-fit mx-auto">
+        <div className="flex flex-col items-start gap-4 md:gap-5 mb-10 md:mb-12 w-fit mx-auto pointer-events-auto">
           {[
             "Timed WATs on recent & relevant topics",
             "Clear feedback you can act on immediately"
           ].map((text, idx) => (
-            <div key={idx} className="flex items-center gap-5 md:gap-6 text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-200 group/point cursor-default transition-all">
+            <div key={idx} className="flex items-center gap-4 md:gap-5 text-lg md:text-xl font-bold text-slate-800 dark:text-slate-300 group/point cursor-default transition-all">
                <div className="relative flex items-center justify-center shrink-0">
-                  {/* Outer Ring Effect */}
-                  <div className="absolute inset-0 rounded-full bg-indigo-500/10 dark:bg-indigo-400/10 scale-125 group-hover/point:scale-150 transition-transform duration-500 opacity-0 group-hover/point:opacity-100" />
-                  
-                  {/* Main Circle Badge - Refined Symmetry */}
-                  <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-slate-900 dark:bg-slate-900 flex items-center justify-center text-white dark:text-white shadow-[0_4px_12px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] border border-slate-700/50 dark:border-slate-700 z-10 group-hover/point:rotate-[360deg] transition-all duration-700">
-                    <SymmetricalArrow className="w-5 h-5 md:w-7 md:h-7" />
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-900 dark:bg-slate-950 flex items-center justify-center text-white dark:text-white shadow-lg border border-slate-700/50 z-10 group-hover/point:rotate-[360deg] transition-all duration-700">
+                    <SymmetricalArrow className="w-4 h-4 md:w-5 md:h-5" />
                   </div>
                </div>
-               
-               {/* Text with subtle underline effect on hover */}
-               <span className="relative text-left group-hover/point:text-indigo-600 dark:group-hover/point:text-indigo-400 transition-colors py-1">
+               <span className="relative text-left group-hover/point:text-indigo-600 dark:group-hover/point:text-indigo-400 transition-colors">
                  {text}
-                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600/30 dark:bg-indigo-400/30 group-hover/point:w-full transition-all duration-500" />
                </span>
             </div>
           ))}
         </div>
       </div>
 
-      <button onClick={() => setState(AppState.PREPARING)} className="group relative px-12 py-6 md:px-16 md:py-8 bg-indigo-900 dark:bg-indigo-600 text-white rounded-[28px] md:rounded-[32px] font-black text-xl md:text-3xl hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-2xl transform hover:-translate-y-2 active:translate-y-0 active:scale-95 flex items-center gap-6 md:gap-8 mb-4">
-        Start WAT Practice 
-        <div className="w-10 h-10 md:w-12 md:h-12 bg-white/10 rounded-full flex items-center justify-center group-hover:translate-x-2 transition-transform border border-white/20">
-          <SymmetricalArrow className="w-5 h-5 md:w-7 md:h-7" />
+      <button 
+        onClick={() => setState(AppState.PREPARING)} 
+        className="group relative px-12 py-6 md:px-16 md:py-8 bg-slate-950 dark:bg-white dark:text-slate-950 text-white rounded-2xl font-black text-xl md:text-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 flex items-center gap-6 mb-4 z-10 overflow-hidden"
+      >
+        <div className="absolute inset-0 rounded-[inherit] border-[1.5px] border-cyan-400 dark:border-indigo-600 animate-minimal-shine pointer-events-none" />
+        <span className="relative z-10 tracking-widest uppercase">Start Practice</span>
+        <div className="relative z-10 w-8 h-8 bg-white/10 dark:bg-slate-950/10 rounded-full flex items-center justify-center group-hover:translate-x-3 transition-transform duration-500">
+          <SymmetricalArrow className="w-4 h-4" />
         </div>
       </button>
 
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(-5deg); }
-          50% { transform: translateY(-15px) rotate(5deg); }
+        @keyframes logo-float {
+          0%, 100% { transform: translateY(0) rotate(-2deg); }
+          50% { transform: translateY(-10px) rotate(2deg); }
         }
-        @keyframes sparkle {
-          0%, 100% { transform: scale(1) opacity(1); filter: blur(0px); }
-          50% { transform: scale(1.5) opacity(0.5); filter: blur(2px); }
+        @keyframes minimal-shine {
+          0%, 100% { opacity: 0.2; }
+          50% { opacity: 1; box-shadow: 0 0 15px currentColor; }
         }
-        .animate-float {
-          animation: float 4s ease-in-out infinite;
-        }
-        .animate-scribble {
-          animation: sparkle 2s ease-in-out infinite;
-        }
+        .animate-logo-float { animation: logo-float 6s ease-in-out infinite; }
+        .animate-minimal-shine { animation: minimal-shine 3s ease-in-out infinite; }
       `}</style>
     </div>
   );
 
-  const renderPreparing = () => (
-    <div className="fixed inset-0 bg-white dark:bg-dark-bg z-[150] flex flex-col items-center justify-center p-12 animate-in fade-in duration-500">
-      <div className="flex flex-col items-center gap-10 max-w-md w-full">
-        {/* Animated Loading Element */}
-        <div className="relative">
-          <div className="w-32 h-32 border-4 border-slate-100 dark:border-slate-800 rounded-full" />
-          <div className="absolute inset-0 w-32 h-32 border-4 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center text-5xl drop-shadow-xl">🖋️</div>
-        </div>
-        
-        {/* Loading Text */}
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight animate-pulse">
-            Preparing your WAT environment…
-          </h2>
-          <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">
-            Synchronizing recently curated topics
-          </p>
+  const renderFlashBriefs = () => {
+    const currentCard = filteredFlashBriefs[flashcardIndex];
+    const total = filteredFlashBriefs.length;
+
+    return (
+      <div className="w-full px-6 py-4 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+        <button 
+          onClick={() => setState(AppState.WELCOME)}
+          className="absolute left-6 top-4 md:top-8 flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 text-slate-600 dark:text-slate-300 font-bold text-[12px] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm group z-20"
+        >
+          <div className="rotate-180 group-hover:-translate-x-1 transition-transform">
+            <SymmetricalArrow className="w-4 h-4" />
+          </div>
+          <span>Back to Home</span>
+        </button>
+
+        <div className="flex flex-col items-center text-center mb-6 pt-16 md:pt-12">
+          <p className="text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-widest text-[11px] mb-1">MBA Preparation</p>
+          <h1 className="text-3xl md:text-4xl font-display text-slate-900 dark:text-white tracking-tight">FlashBriefs</h1>
         </div>
 
-        {/* Linear Progress Bar */}
-        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
-          <div className="h-full bg-indigo-600 dark:bg-indigo-400 animate-loading-bar" />
+        <div className="flex justify-center flex-wrap gap-2 mb-8 no-scrollbar">
+          {['All', 'Economy & Business', 'Technology & AI', 'Public Policy & Governance', 'Society, Ethics & Global Affairs'].map(cat => (
+            <button
+              key={cat}
+              onClick={() => { setActiveFlashCategory(cat); setFlashcardIndex(0); setIsFlipped(false); }}
+              className={`px-5 py-2.5 rounded-full text-[13px] font-bold transition-all border whitespace-nowrap ${activeFlashCategory === cat ? 'bg-indigo-600 text-white border-transparent shadow-md' : 'bg-white dark:bg-dark-card text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {total > 0 ? (
+          <div className="flex flex-col items-center pb-12">
+            <div className="w-full max-w-2xl h-[340px] relative perspective-1000 group">
+              <div 
+                onClick={() => setIsFlipped(!isFlipped)}
+                className={`relative w-full h-full transition-all duration-700 transform-style-3d cursor-pointer ${isFlipped ? 'rotate-y-180' : ''}`}
+              >
+                <div className="absolute inset-0 backface-hidden bg-white dark:bg-dark-card border-[3px] border-slate-100 dark:border-indigo-500/40 rounded-[32px] shadow-2xl p-8 flex flex-col items-center justify-center text-center overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500/10 dark:bg-indigo-500/20" />
+                  <div className="mb-6 px-5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-200 text-[12px] font-bold uppercase tracking-widest border border-indigo-100 dark:border-indigo-500/30">
+                    {currentCard.category}
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-display text-slate-900 dark:text-white leading-tight tracking-tight px-4">
+                    {currentCard.question}
+                  </h3>
+                  <div className="mt-10 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest animate-pulse">
+                    Tap to Flip
+                  </div>
+                </div>
+
+                <div className="absolute inset-0 backface-hidden rotate-y-180 bg-slate-900 dark:bg-slate-950 border-[3px] border-slate-800 dark:border-indigo-500/50 rounded-[32px] shadow-2xl p-8 flex flex-col overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500/30" />
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="px-4 py-1.5 rounded-full bg-white/10 text-white/90 text-[11px] font-bold uppercase tracking-widest border border-white/10">
+                      QUICK DEEP-DIVE
+                    </div>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); toggleSaveCard(currentCard.id); }}
+                      className={`text-2xl transition-all ${savedCardIds.has(currentCard.id) ? 'text-indigo-400' : 'text-white/30 hover:text-white'}`}
+                    >
+                      {savedCardIds.has(currentCard.id) ? '🔖' : '📑'}
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 space-y-4 overflow-y-auto no-scrollbar">
+                    {currentCard.what && (
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{currentCard.why ? 'What' : 'Definition'}</div>
+                        <p className="text-lg text-white font-bold leading-tight tracking-tight">
+                          {currentCard.what}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {currentCard.why && (
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Why</div>
+                        <p className="text-base text-slate-300 font-medium leading-tight">
+                          {currentCard.why}
+                        </p>
+                      </div>
+                    )}
+
+                    {currentCard.askedAs && (
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Asked as</div>
+                        <p className="text-base text-indigo-200 italic font-semibold leading-tight border-l-2 border-indigo-500/50 pl-3">
+                          {currentCard.askedAs}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-between text-[11px] font-bold text-white/50 uppercase tracking-widest border-t border-white/10 pt-4">
+                    <div className="flex gap-4">
+                      {currentCard.tag && <span className="text-indigo-300">{currentCard.tag}</span>}
+                    </div>
+                    <div className="text-indigo-400 flex items-center gap-1">
+                      <span className="text-lg">↺</span> BACK
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-10 flex items-center gap-8">
+              <button 
+                disabled={flashcardIndex === 0}
+                onClick={() => { setFlashcardIndex(prev => prev - 1); setIsFlipped(false); }}
+                className="w-14 h-14 rounded-full bg-white dark:bg-dark-card border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-900 dark:text-white shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-20 rotate-180"
+              >
+                <SymmetricalArrow className="w-5 h-5" />
+              </button>
+
+              <div className="px-8 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-indigo-500/20 rounded-[20px] shadow-sm text-center min-w-[140px]">
+                <div className="text-3xl font-display text-slate-900 dark:text-white tracking-tighter flex items-center justify-center">
+                  {flashcardIndex + 1} 
+                  <span className="mx-2 text-slate-900 dark:text-white">/</span> 
+                  {total}
+                </div>
+                <div className="text-[11px] font-bold text-slate-400 dark:text-indigo-400/80 uppercase tracking-widest mt-0.5">BRIEFS</div>
+              </div>
+
+              <button 
+                disabled={flashcardIndex === total - 1}
+                onClick={() => { setFlashcardIndex(prev => prev + 1); setIsFlipped(false); }}
+                className="w-14 h-14 rounded-full bg-slate-950 dark:bg-white dark:text-slate-950 flex items-center justify-center text-white dark:text-slate-950 shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-20"
+              >
+                <SymmetricalArrow className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-slate-50 dark:bg-dark-card rounded-[32px] border-2 border-dashed border-slate-200 dark:border-white/5">
+            <h3 className="text-xl font-display text-slate-400 dark:text-slate-500">No briefs in this category yet.</h3>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPreparing = () => (
+    <div className="fixed inset-0 bg-white dark:bg-dark-bg z-[150] flex flex-col items-center justify-center p-12 animate-in fade-in duration-300">
+      <div className="flex flex-col items-center gap-8 max-w-md w-full">
+        <div className="relative">
+          <div className="w-24 h-24 border-2 border-slate-100 dark:border-slate-800 rounded-full" />
+          <div className="absolute inset-0 w-24 h-24 border-2 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin" />
+        </div>
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Syncing Arena…</h2>
+          <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px]">Optimizing environment</p>
         </div>
       </div>
-      <style>{`
-        @keyframes loading-bar {
-          0% { width: 0%; transform: translateX(-100%); }
-          50% { width: 50%; transform: translateX(50%); }
-          100% { width: 100%; transform: translateX(200%); }
-        }
-        .animate-loading-bar {
-          animation: loading-bar 2s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
-        }
-      `}</style>
     </div>
   );
 
   const renderAbout = () => (
-    <div className="max-w-4xl mx-auto px-6 py-20 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-      <div className="bg-white dark:bg-slate-900 p-12 md:p-20 rounded-[60px] shadow-3xl border-4 border-slate-50 dark:border-slate-800 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-10 opacity-5 text-8xl font-black pointer-events-none">ABOUT</div>
-        <h2 className="text-5xl font-display text-slate-900 dark:text-white mb-10 tracking-tighter">Mission: Practice with Precision</h2>
-        <div className="space-y-8">
-          <p className="text-2xl text-slate-700 dark:text-slate-300 leading-relaxed font-medium tracking-tight">
-            Hello, I’m Sahil an MBA aspirant just like you. I built <span className="text-indigo-600 dark:text-indigo-400 font-black">wat4mba</span> to help prepare for one of the most important stages of the Indian MBA selection process: the Written Ability Test.
+    <div className="w-full px-6 py-12 animate-in fade-in slide-in-from-bottom-6 duration-1000 relative">
+      <button 
+        onClick={() => setState(AppState.WELCOME)}
+        className="absolute left-6 top-4 md:top-8 flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-bold text-[12px] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm group z-20"
+      >
+        <div className="rotate-180 group-hover:-translate-x-1 transition-transform">
+          <SymmetricalArrow className="w-4 h-4" />
+        </div>
+        <span>Back to Home</span>
+      </button>
+
+      <div className="bg-white dark:bg-slate-900 p-10 md:p-16 rounded-[40px] shadow-3xl border border-slate-300 dark:border-slate-700 relative overflow-hidden mt-28 md:mt-32 max-w-4xl mx-auto">
+        <h2 className="text-4xl font-display text-slate-900 dark:text-white mb-8 tracking-tighter">Mission: Precision Practice</h2>
+        <div className="space-y-6">
+          <p className="text-xl text-slate-700 dark:text-slate-300 leading-relaxed font-medium tracking-tight">
+            Hello, I’m Sahil an MBA aspirant just like you. I built <span className="text-indigo-600 dark:text-indigo-400 font-bold">WAT4MBA</span> to simplify Written Ability Test preparation.
           </p>
-          <p className="text-2xl text-slate-700 dark:text-slate-300 leading-relaxed font-medium tracking-tight">
-            After CAT, WAT plays a critical role in shortlisting and final conversion, yet focused practice platforms are rare. <span className="text-indigo-600 dark:text-indigo-400 font-black">wat4mba</span> bridges this gap with timed practice on high-frequency, MBA-relevant topics.
+          <p className="text-xl text-slate-700 dark:text-slate-300 leading-relaxed font-medium tracking-tight">
+            WAT is often the gatekeeper for final conversion. This tool provides a focused, timed environment with immediate, structured feedback to help you iterate faster.
           </p>
         </div>
-        <button 
-          onClick={() => setState(AppState.WELCOME)} 
-          className="mt-14 px-12 py-6 bg-indigo-900 dark:bg-indigo-600 text-white rounded-3xl font-black text-xl hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-xl transform hover:-translate-y-1"
-        >
-          BACK TO HOME
-        </button>
       </div>
     </div>
   );
 
   const renderAnalyzing = () => (
     <div className="fixed inset-0 bg-white dark:bg-dark-bg z-[100] flex flex-col items-center justify-center p-12 animate-in fade-in duration-500">
-      <div className="max-w-3xl w-full text-center">
-        <div className="w-20 h-20 border-4 border-indigo-100 dark:border-indigo-900 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin mx-auto mb-16" />
-        <h2 className="text-[10px] font-black text-indigo-400 dark:text-indigo-300 uppercase tracking-[0.5em] mb-12">Analyzing Linguistic Patterns...</h2>
-        <div className="bg-slate-50 dark:bg-dark-card p-12 md:p-16 rounded-[48px] border-2 border-slate-100 dark:border-dark-border relative">
-          <p className="text-2xl md:text-3xl font-display text-slate-800 dark:text-slate-100 leading-relaxed italic mb-6">"{currentQuote.text}"</p>
-          <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">— {currentQuote.author}</p>
+      <div className="max-w-2xl w-full text-center">
+        <div className="w-12 h-12 border-2 border-indigo-100 dark:border-indigo-900 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin mx-auto mb-12" />
+        <h2 className="text-[11px] font-bold text-indigo-400 dark:text-indigo-300 uppercase tracking-widest mb-10">Linguistic Analysis...</h2>
+        <div className="bg-slate-50 dark:bg-dark-card p-10 rounded-[32px] border border-slate-200 dark:border-dark-border shadow-lg">
+          <p className="text-2xl font-display text-slate-800 dark:text-slate-100 italic leading-snug mb-4">"{currentQuote.text}"</p>
+          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">— {currentQuote.author}</p>
         </div>
       </div>
     </div>
@@ -396,124 +520,101 @@ const App: React.FC = () => {
   const renderWritingArena = () => {
     const isCritical = timeLeft < 60;
     const wordCount = content.split(/\s+/).filter(x => x).length;
-
     return (
-      <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col items-center h-[calc(100vh-145px)] relative">
-        <div className="w-full bg-[#0f172a] dark:bg-slate-900 rounded-xl shadow-lg px-4 py-2 mb-2 flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-800 dark:border-indigo-900/40 shrink-0 z-20">
+      <div className="w-full px-6 flex flex-col items-center h-[calc(100vh-180px)] relative">
+        <div className="w-full bg-slate-900 rounded-xl shadow-lg px-6 py-3 mb-4 flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-800 shrink-0 z-20">
           <div className="flex-1 min-w-0 w-full text-center md:text-left">
-            <div className="mb-0.5"><span className="text-[9px] font-black text-indigo-400 dark:text-indigo-400 uppercase tracking-[0.2em] opacity-80">{selectedTopic?.category || 'GOVERNANCE'}</span></div>
-            <h1 className="text-lg md:text-xl font-bold text-white leading-tight tracking-tight line-clamp-1">{selectedTopic?.title}</h1>
+            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest opacity-80">{selectedTopic?.category}</span>
+            <h1 className="text-xl font-bold text-white tracking-tight line-clamp-1">{selectedTopic?.title}</h1>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="bg-slate-800/40 rounded-lg py-1 px-4 min-w-[70px] text-center border border-slate-700/50">
-               <div className={`text-lg font-black tabular-nums tracking-tighter ${isCritical ? 'text-rose-500 animate-pulse' : 'text-white'}`}>{formatTime(timeLeft)}</div>
-               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 block">TIME</span>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="bg-slate-800 rounded-lg py-2 px-5 min-w-[80px] text-center border border-slate-700/50">
+               <div className={`text-xl font-black tabular-nums ${isCritical ? 'text-rose-500 animate-pulse' : 'text-white'}`}>{formatTime(timeLeft)}</div>
+               <span className="text-[9px] font-bold uppercase text-slate-400 block">TIME</span>
             </div>
-            <div className="bg-slate-800/40 rounded-lg py-1 px-4 min-w-[70px] text-center border border-slate-700/50">
-               <div className="text-lg font-black text-white tracking-tighter">{wordCount}</div>
-               <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 block">WORDS</span>
+            <div className="bg-slate-800 rounded-lg py-2 px-5 min-w-[80px] text-center border border-slate-700/50">
+               <div className="text-xl font-black text-white">{wordCount}</div>
+               <span className="text-[9px] font-bold uppercase text-slate-400 block">WORDS</span>
             </div>
           </div>
         </div>
-
-        <div className="relative w-full flex-1 p-1 bg-[#0f172a] dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col min-h-0 z-10 overflow-hidden">
+        <div className="relative w-full flex-1 p-1 bg-slate-900 rounded-[28px] shadow-2xl flex flex-col min-h-0 z-10">
           <textarea
             value={content}
             onChange={handleContentChange}
-            placeholder="Structure your analysis here..."
-            className="w-full h-full p-6 md:p-10 bg-white dark:bg-slate-800 rounded-xl focus:outline-none text-lg md:text-xl leading-relaxed text-slate-700 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 transition-all font-medium border-none shadow-inner resize-none overflow-y-auto tracking-tight"
+            placeholder="Construct your response here..."
+            className="w-full h-full p-8 md:p-12 bg-white dark:bg-slate-800 rounded-[24px] focus:outline-none text-xl leading-relaxed text-slate-700 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 transition-all font-sans font-medium border-none shadow-inner resize-none overflow-y-auto"
             autoFocus
           />
         </div>
-        
-        <div className="w-full mt-2 flex gap-4 shrink-0">
-          <button 
-            onClick={() => setIsPreviewOpen(true)} 
-            className="flex-1 px-6 py-4 bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-400 border-2 border-slate-100 dark:border-indigo-900/30 rounded-xl font-black text-sm hover:bg-indigo-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm"
-          >
-            VIEW PREVIEW
-          </button>
-          <button 
-            onClick={handleSubmit} 
-            className="flex-1 px-6 py-4 bg-indigo-900 dark:bg-indigo-600 text-white rounded-xl font-black text-sm hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-lg active:scale-95 tracking-tight flex items-center justify-center"
-          >
-            SUBMIT FOR REVIEW
-          </button>
+        <div className="w-full mt-4 flex gap-4 shrink-0 pb-6">
+          <button onClick={() => setIsPreviewOpen(true)} className="flex-1 px-6 py-5 bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-400 border border-slate-300 dark:border-slate-800 rounded-2xl font-bold text-sm hover:bg-indigo-50 dark:hover:bg-slate-800 transition-all active:scale-95">Preview Draft</button>
+          <button onClick={handleSubmit} className="flex-1 px-6 py-5 bg-indigo-900 dark:bg-indigo-600 text-white rounded-2xl font-black text-sm hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-lg active:scale-95">Submit for Review</button>
         </div>
-
-        {isPreviewOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 dark:bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-dark-card rounded-[32px] shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col overflow-hidden transform animate-in zoom-in-95 duration-300">
-              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
-                <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">Draft Preview</h3>
-                <button onClick={() => setIsPreviewOpen(false)} className="text-3xl font-light text-slate-400 hover:text-slate-600 dark:hover:text-slate-100">×</button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-10">
-                <div className="text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-medium text-lg tracking-tight">{content || "No content yet."}</div>
-              </div>
-              <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 text-center">
-                <button onClick={() => setIsPreviewOpen(false)} className="px-10 py-3 bg-indigo-900 dark:bg-indigo-600 text-white rounded-xl font-black tracking-tight hover:bg-black dark:hover:bg-indigo-700">BACK TO EDITOR</button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   };
 
   const renderReport = () => {
     if (!feedback || !selectedTopic) return null;
-
-    const isLowContent = feedback.wordCount < 60;
-
     return (
-      <div className="max-w-6xl mx-auto p-6 pb-40 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-        <div className="flex flex-col md:flex-row items-start justify-between mb-10 gap-10">
-          <div className="flex-1">
-            <h1 className="text-7xl font-display text-slate-900 dark:text-white tracking-tighter leading-none mb-4">Feedback</h1>
-            <p className="text-indigo-600 dark:text-indigo-400 font-extrabold text-3xl flex items-center gap-4 tracking-tight"><span className="text-slate-200 dark:text-slate-800 text-4xl font-display">#</span> {selectedTopic?.title}</p>
+      <div className="w-full p-6 pb-32 animate-in fade-in slide-in-from-bottom-10 duration-1000">
+        <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-10">
+          <div className="text-center md:text-left">
+            <h1 className="text-6xl font-display text-slate-900 dark:text-white tracking-tighter mb-2">Performance</h1>
+            <p className="text-indigo-600 dark:text-indigo-400 font-bold text-2xl tracking-tight">{selectedTopic?.title}</p>
           </div>
-          <button onClick={() => { setState(AppState.WELCOME); setContent(''); setSelectedTopic(null); }} className="group px-12 py-7 bg-indigo-900 dark:bg-indigo-600 text-white rounded-3xl font-black text-xl hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-xl flex items-center gap-6 transform hover:-translate-y-2 tracking-tight">START OVER <span className="group-hover:translate-x-3 transition-transform text-3xl">→</span></button>
+          <button onClick={() => { setState(AppState.WELCOME); setContent(''); setSelectedTopic(null); }} className="px-12 py-6 bg-slate-950 dark:bg-indigo-600 text-white rounded-[24px] font-black text-xl hover:scale-105 transition-all shadow-xl flex items-center gap-4">Start Over <SymmetricalArrow className="w-6 h-6" /></button>
         </div>
-
-        {isLowContent && (
-          <div className="mb-8 bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-900/50 p-8 rounded-[32px] flex flex-col md:flex-row items-center gap-6 animate-in slide-in-from-top-6 duration-700 shadow-xl relative overflow-hidden">
-             <div className="w-16 h-16 bg-amber-400 dark:bg-amber-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg text-3xl">🧩</div>
-             <div>
-                <p className="text-xl text-amber-900 dark:text-white font-black tracking-tight leading-snug">
-                  Your response is shorter than 60 words, which is not enough to evaluate structure, clarity, and depth.
-                  Please write a little more to receive full feedback.
-                </p>
-             </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[32px] border border-slate-300 dark:border-slate-700 flex flex-col items-center text-center">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Final Score</span>
+            <div className="text-6xl font-black text-indigo-600 dark:text-indigo-400 mb-2">{feedback.score}</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-white">Grade {feedback.grade}</div>
           </div>
-        )}
-
-        <div className="mb-12 bg-white dark:bg-slate-900 p-10 rounded-[40px] border-2 border-slate-100 dark:border-slate-800 flex items-center gap-10 shadow-sm animate-in slide-in-from-left-6 duration-700">
-          <div className="bg-indigo-900 dark:bg-indigo-600 w-24 h-24 rounded-[28px] flex flex-col items-center justify-center shrink-0 shadow-lg">
-            <span className="text-3xl font-black text-white tracking-tighter">{feedback.wpm}</span>
-            <span className="text-[9px] font-black text-indigo-300 dark:text-indigo-200 uppercase tracking-[0.2em]">WPM</span>
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[32px] border border-slate-300 dark:border-slate-700 flex flex-col items-center text-center">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Linguistic Velocity</span>
+            <div className="text-6xl font-black text-indigo-600 dark:text-indigo-400 mb-2">{feedback.wpm}</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-white">Words/Minute</div>
           </div>
-          <div className="flex-1">
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] mb-2 block">Linguistic Velocity</span>
-            <p className="text-lg font-bold text-slate-700 dark:text-slate-200 italic tracking-tight leading-relaxed">“{getWPMInterpretation(feedback.wpm)}”</p>
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[32px] border border-slate-300 dark:border-slate-700 flex flex-col items-center text-center">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Word Count</span>
+            <div className="text-6xl font-black text-indigo-600 dark:text-indigo-400 mb-2">{feedback.wordCount}</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-white">Total Lexicon</div>
           </div>
         </div>
 
-        {!isLowContent && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-16">
-            <FeedbackList title="Cognitive Strengths" items={feedback.positives} type="positive" />
-            <FeedbackList title="Critical Weaknesses" items={feedback.negatives} type="negative" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          <div className="bg-emerald-50/50 dark:bg-emerald-950/10 p-10 rounded-[32px] border border-emerald-300 dark:border-emerald-900/30">
+            <h3 className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest mb-8">Structural Strengths</h3>
+            <ul className="space-y-6">
+              {feedback.positives.map((p, i) => (
+                <li key={i} className="flex gap-4 text-lg font-bold text-slate-700 dark:text-slate-300 leading-snug">
+                  <span className="text-emerald-500 mt-1">✓</span> {p}
+                </li>
+              ))}
+            </ul>
           </div>
-        )}
+          <div className="bg-rose-50/50 dark:bg-rose-950/10 p-10 rounded-[32px] border border-rose-300 dark:border-rose-900/30">
+            <h3 className="text-[11px] font-bold text-rose-600 uppercase tracking-widest mb-8">Constructive Critique</h3>
+            <ul className="space-y-6">
+              {feedback.negatives.map((p, i) => (
+                <li key={i} className="flex gap-4 text-lg font-bold text-slate-700 dark:text-slate-300 leading-snug">
+                  <span className="text-rose-500 mt-1">!</span> {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
-        <div className="bg-indigo-950 dark:bg-slate-900 text-white p-14 rounded-[56px] shadow-3xl relative overflow-hidden group border border-slate-800 dark:border-indigo-900/30">
-          <div className="absolute top-0 right-0 p-12 opacity-5 text-9xl font-black pointer-events-none tracking-tighter">MBA</div>
-          <h3 className="text-3xl font-display mb-12 relative z-10 flex items-center gap-6 tracking-tight"><span className="w-12 h-12 rounded-xl bg-indigo-500/30 dark:bg-indigo-600/20 flex items-center justify-center text-xl border border-indigo-400/20">🎯</span>Strategic Action Plan</h3>
-          <ul className="space-y-10 relative z-10">
+        <div className="bg-slate-950 text-white p-12 rounded-[40px] shadow-2xl relative overflow-hidden border border-white/20">
+          <h3 className="text-3xl font-display mb-10 relative z-10">Strategic Action Plan</h3>
+          <ul className="space-y-8 relative z-10">
             {feedback.recommendations.map((item, idx) => (
-              <li key={idx} className="flex items-start gap-8 group/item">
-                <span className="text-amber-400 dark:text-amber-500 font-black text-2xl shrink-0 mt-1">→</span>
-                <span className="text-slate-200 dark:text-slate-100 text-xl leading-relaxed font-semibold tracking-tight">{item}</span>
+              <li key={idx} className="flex items-start gap-6 group">
+                <span className="text-indigo-400 font-bold text-2xl shrink-0 mt-0.5">→</span>
+                <span className="text-slate-200 text-xl leading-relaxed font-bold">{item}</span>
               </li>
             ))}
           </ul>
@@ -522,113 +623,84 @@ const App: React.FC = () => {
     );
   };
 
-  const getDifficultyColor = (diff: string) => {
-    switch (diff) {
-      case 'Easy': return 'bg-emerald-500 dark:bg-emerald-600';
-      case 'Medium': return 'bg-amber-500 dark:bg-amber-600';
-      case 'Hard': return 'bg-rose-500 dark:bg-rose-600';
-      default: return 'bg-slate-500';
-    }
-  };
-
   const renderFlipperScreen = () => (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] p-6 animate-in zoom-in-95 duration-700">
-      <div className="bg-white dark:bg-dark-card p-8 md:p-16 rounded-[60px] shadow-2xl max-w-4xl w-full text-center border-4 border-slate-100 dark:border-slate-800 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 dark:bg-indigo-900/10 rounded-full -mr-32 -mt-32 opacity-50 blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-violet-50 dark:bg-violet-900/10 rounded-full -ml-32 -mb-32 opacity-50 blur-3xl pointer-events-none"></div>
-        <div className="px-4 relative z-10">
-          <div className={`relative bg-slate-900 dark:bg-slate-950 rounded-[40px] p-10 mb-14 h-64 flex items-center justify-center shadow-2xl group border-[10px] border-slate-800 dark:border-indigo-900/20 transition-all duration-500 ${!isSpinning && selectedTopic ? 'ring-8 ring-indigo-500/30 scale-105 shadow-indigo-600/20 animate-pulse-subtle' : ''}`}>
-            <div className={`flex flex-col items-center gap-6 transition-all duration-300 ${isSpinning ? 'opacity-30 blur-[4px] scale-90 translate-y-4' : 'opacity-100 blur-0 scale-100 translate-y-0'}`}>
-              {!isSpinning && selectedTopic && (
-                <div className="flex items-center gap-2 animate-in slide-in-from-top duration-500">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white ${getDifficultyColor(selectedTopic.difficulty)}`}>
-                    {selectedTopic.difficulty} LEVEL
-                  </span>
-                </div>
-              )}
-              <p className="text-2xl md:text-3xl font-display text-white px-10 text-center leading-snug tracking-tighter">
-                {WAT_TOPICS[flipperIndex].title}
-              </p>
-            </div>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 animate-in zoom-in-95 duration-700 pb-20">
+      <div className="bg-white dark:bg-dark-card p-10 md:p-16 rounded-[40px] shadow-2xl max-w-4xl w-full text-center border border-slate-300 dark:border-slate-700">
+        <div className="relative mb-12 h-64 flex items-center justify-center">
+          <div className={`relative w-full bg-slate-900 rounded-[28px] p-10 h-full flex flex-col items-center justify-center shadow-xl border-4 border-slate-800 transition-all duration-300 ${isSpinning ? 'opacity-40 blur-sm scale-95' : 'opacity-100 blur-0 scale-100'}`}>
+            {!isSpinning && selectedTopic && (
+              <span className={`absolute top-6 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white ${selectedTopic.difficulty === 'Hard' ? 'bg-rose-600' : selectedTopic.difficulty === 'Medium' ? 'bg-amber-600' : 'bg-emerald-600'}`}>
+                {selectedTopic.difficulty} LEVEL
+              </span>
+            )}
+            <p className="text-2xl md:text-3xl font-display text-white px-8 text-center leading-snug">
+              {WAT_TOPICS[flipperIndex].title}
+            </p>
           </div>
         </div>
-        <div className="flex flex-col gap-6 px-4 relative z-10">
-          {!selectedTopic || isSpinning ? (
-            <button onClick={startSpin} disabled={isSpinning} className="px-12 py-8 bg-amber-400 dark:bg-amber-600 text-indigo-950 dark:text-white rounded-[30px] font-black text-2xl hover:bg-amber-300 dark:hover:bg-amber-500 transition-all shadow-xl disabled:opacity-50 border-b-8 border-amber-600 dark:border-amber-800 active:border-b-2 tracking-tight">
-              {isSpinning ? 'BROWSING...' : 'CHANGE TOPIC'}
-            </button>
-          ) : (
-            <div className="animate-in fade-in slide-in-from-top-10 duration-700">
-              <div className="bg-slate-50/50 dark:bg-slate-800/40 backdrop-blur-sm p-8 rounded-[40px] mb-10 border-2 border-slate-100 dark:border-slate-700">
-                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-6 block">Set Examination Time</span>
-                <div className="flex gap-6 justify-center">
-                  {[15, 30].map(m => (
-                    <button key={m} onClick={() => setTimerDuration(m * 60)} className={`flex-1 py-5 rounded-2xl text-xl font-black transition-all border-b-[8px] tracking-tight ${timerDuration === m * 60 ? 'bg-indigo-900 dark:bg-indigo-600 text-white border-indigo-950 dark:border-indigo-800 scale-105' : 'bg-white dark:bg-slate-700 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800'}`}>{m} MINS</button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-6">
-                <button onClick={startSpin} className="px-8 py-5 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-4 border-slate-100 dark:border-slate-800 rounded-[24px] font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm tracking-tight">CHANGE TOPIC</button>
-                <button onClick={handleChooseTopic} className="flex-1 px-12 py-6 bg-indigo-900 dark:bg-indigo-600 text-white rounded-[24px] font-black text-xl hover:bg-black dark:hover:bg-indigo-700 transition-all shadow-2xl transform hover:-translate-y-1 tracking-tight">ENTER ARENA</button>
-              </div>
+        
+        {!selectedTopic || isSpinning ? (
+          <button onClick={startSpin} disabled={isSpinning} className="w-full px-12 py-7 bg-indigo-600 text-white rounded-2xl font-black text-xl hover:bg-indigo-700 transition-all shadow-lg disabled:opacity-50 font-sans">
+            {isSpinning ? 'Selecting Topic...' : 'Choose Random Topic'}
+          </button>
+        ) : (
+          <div className="flex flex-col gap-8 animate-in fade-in duration-500">
+            <div className="flex justify-center gap-4">
+              {[15, 30].map(m => (
+                <button key={m} onClick={() => setTimerDuration(m * 60)} className={`flex-1 py-4 rounded-xl text-lg font-bold transition-all border-2 ${timerDuration === m * 60 ? 'bg-indigo-600 text-white border-transparent scale-105' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-300 dark:border-slate-700'} font-sans`}>{m} Mins</button>
+              ))}
             </div>
-          )}
-        </div>
+            <button onClick={handleChooseTopic} className="w-full px-12 py-6 bg-indigo-900 dark:bg-indigo-600 text-white rounded-2xl font-black text-xl hover:scale-105 transition-all shadow-2xl font-sans">Enter Writing Arena</button>
+          </div>
+        )}
       </div>
-      <style>{`
-        @keyframes pulse-subtle {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
-          50% { box-shadow: 0 0 20px 10px rgba(79, 70, 229, 0.2); }
-        }
-        .animate-pulse-subtle {
-          animation: pulse-subtle 2s infinite ease-in-out;
-        }
-      `}</style>
     </div>
   );
 
   return (
-    <div className="min-h-screen selection:bg-indigo-600 selection:text-white pb-32 overflow-x-hidden bg-white dark:bg-dark-bg transition-colors duration-300">
-      <nav className="w-full bg-white/80 dark:bg-dark-bg/80 backdrop-blur-3xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 h-24 flex justify-between items-center">
-          <div className="flex items-center cursor-pointer group" onClick={() => setState(AppState.WELCOME)}>
-            <div className="flex items-center font-black tracking-tighter transition-all">
-              <div className="bg-indigo-900 dark:bg-indigo-600 px-4 py-2 rounded-xl text-white text-xl shadow-lg group-hover:bg-black dark:group-hover:bg-indigo-700 mr-3">WAT</div>
-              <span className="text-3xl font-display text-slate-900 dark:text-white leading-none">4MBA</span>
-            </div>
+    <div className="min-h-screen pb-4 bg-[#fcfdff] dark:bg-dark-bg transition-colors duration-500 font-sans">
+      <nav className="w-full bg-white/70 dark:bg-dark-bg/70 backdrop-blur-3xl sticky top-0 z-50 border-b-2 border-slate-400 dark:border-slate-600">
+        <div className="w-full px-6 h-24 flex justify-between items-center">
+          <div className="flex justify-start">
+            <Logo onClick={() => setState(AppState.WELCOME)} />
           </div>
           
           <div className="flex items-center gap-4">
             <button 
+              onClick={() => setState(AppState.FLASHBRIEFS)}
+              className={`h-12 px-6 rounded-full font-bold text-[13px] transition-all flex items-center gap-2 ${state === AppState.FLASHBRIEFS ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+            >
+              <span>🎴</span> FlashBriefs
+            </button>
+
+            <button 
               onClick={() => setState(AppState.ABOUT)}
-              className="h-12 px-8 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all border-2 border-slate-100 dark:border-slate-800 hover:border-indigo-600 dark:hover:border-indigo-400 bg-white/50 dark:bg-slate-900/50"
+              className={`h-12 px-7 rounded-full bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 text-[#334155] dark:text-slate-200 font-bold text-[13px] hover:scale-105 active:scale-95 transition-all shadow-sm ${state === AppState.ABOUT ? 'ring-2 ring-indigo-500/30 text-indigo-600 dark:text-indigo-400' : ''}`}
             >
               About
             </button>
-            
-            <div className="bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl shadow-inner border border-slate-200 dark:border-slate-800 flex items-center gap-1.5 h-12">
+
+            <div className="h-12 p-1 flex items-center bg-slate-100 dark:bg-dark-card rounded-full border border-slate-300 dark:border-white/10 shadow-inner">
               <button 
                 onClick={() => setIsDarkMode(false)}
-                className={`h-full px-5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!isDarkMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`h-full px-6 flex items-center justify-center rounded-full text-[11px] font-bold tracking-tight transition-all ${!isDarkMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-600'}`}
               >
                 Light
               </button>
               <button 
                 onClick={() => setIsDarkMode(true)}
-                className={`h-full px-5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isDarkMode ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`h-full px-6 flex items-center justify-center rounded-full text-[11px] font-bold tracking-tight transition-all ${isDarkMode ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 Dark
               </button>
             </div>
           </div>
         </div>
-        {/* Distinction Line */}
-        <div className="w-full h-[1px] bg-slate-100 dark:bg-slate-800" />
       </nav>
 
       {renderProgressBar()}
 
-      <main className="mt-2">
+      <main className="mt-4">
         {isAnalyzing && renderAnalyzing()}
         {!isAnalyzing && state === AppState.WELCOME && renderWelcome()}
         {!isAnalyzing && state === AppState.PREPARING && renderPreparing()}
@@ -636,30 +708,10 @@ const App: React.FC = () => {
         {!isAnalyzing && state === AppState.WRITING && renderWritingArena()}
         {!isAnalyzing && state === AppState.REPORT && renderReport()}
         {!isAnalyzing && state === AppState.ABOUT && renderAbout()}
+        {!isAnalyzing && state === AppState.FLASHBRIEFS && renderFlashBriefs()}
       </main>
     </div>
   );
 };
-
-const FeedbackList: React.FC<{ title: string; items: string[]; type: 'positive' | 'negative' }> = ({ title, items, type }) => (
-  <div className={`bg-white dark:bg-slate-900/50 p-12 rounded-[56px] border-4 shadow-xl transition-all duration-700 hover:shadow-2xl ${type === 'positive' ? 'border-emerald-50 dark:border-emerald-900/20' : 'border-rose-50 dark:border-rose-900/20'}`}>
-    <h3 className={`text-[11px] font-black mb-10 uppercase tracking-[0.4em] flex items-center gap-4 ${type === 'positive' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-       <span className={`w-2.5 h-2.5 rounded-full ${type === 'positive' ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`} />
-       {title}
-    </h3>
-    {items.length === 0 ? (
-      <p className="text-slate-400 dark:text-slate-600 text-lg font-bold italic tracking-tight">Threshold met for standard evaluation criteria.</p>
-    ) : (
-      <ul className="space-y-8">
-        {items.map((item, idx) => (
-          <li key={idx} className="flex items-start gap-6 text-xl text-slate-700 dark:text-slate-200 font-bold leading-relaxed group tracking-tight">
-            <span className={`mt-2.5 w-2.5 h-2.5 rounded-full shrink-0 shadow-lg group-hover:scale-125 transition-transform duration-300 ${type === 'positive' ? 'bg-emerald-400 dark:bg-emerald-500' : 'bg-rose-400 dark:bg-rose-500'}`} />
-            {item}
-          </li>
-        ))}
-      </ul>
-    )}
-  </div>
-);
 
 export default App;

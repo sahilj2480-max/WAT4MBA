@@ -96,9 +96,8 @@ export const evaluateWAT = (text: string, topicTitle: string = "", timeSpentSeco
     scoreModifier -= 10;
   }
 
-  // 4. EVIDENCE & BALANCE
+  // 4. EVIDENCE
   const hasReasoning = STRUCTURE_MARKERS.argument.some(m => text.toLowerCase().includes(m));
-  const hasBalance = /\b(however|on the other hand|while|although|alternatively)\b/i.test(text);
 
   if (hasReasoning) {
     strengths.push("Evidence-based approach. You consistently support your claims with logic or illustrative examples.");
@@ -106,14 +105,6 @@ export const evaluateWAT = (text: string, topicTitle: string = "", timeSpentSeco
     weaknesses.push("Claims are presented as assertions without supporting data or reasoning.");
     actionables.push("For each claim, add a reason or example (answer 'why?' and 'how?').");
     scoreModifier -= 15;
-  }
-
-  if (hasBalance) {
-    strengths.push("Balanced perspective. Acknowledging counterpoints demonstrates critical thinking and mature analysis.");
-  } else if (topicTitle.includes('vs') || topicTitle.includes('or') || topicTitle.includes('?')) {
-    weaknesses.push("One-sided argument. The topic suggests a more nuanced, multi-perspective analysis.");
-    actionables.push("Acknowledge opposing viewpoints to show a balanced, critical understanding.");
-    scoreModifier -= 10;
   }
 
   // 5. TONE

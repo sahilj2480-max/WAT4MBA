@@ -27,7 +27,8 @@ export enum AppState {
   FLIPPER = 'FLIPPER',
   WRITING = 'WRITING',
   REPORT = 'REPORT',
-  ABOUT = 'ABOUT'
+  ABOUT = 'ABOUT',
+  FLASHBRIEFS = 'FLASHBRIEFS'
 }
 
 export interface Badge {
@@ -44,4 +45,15 @@ export interface UserStats {
   completedTests: number;
   highestScore: number;
   badges: string[]; // IDs of earned badges
+}
+
+export interface Flashcard {
+  id: string;
+  category: 'Economy & Business' | 'Technology & AI' | 'Public Policy & Governance' | 'Society, Ethics & Global Affairs';
+  question: string;
+  what: string;
+  why: string;
+  askedAs: string;
+  tag?: 'Recent' | 'Trending' | 'Evergreen';
+  date?: string;
 }
