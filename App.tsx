@@ -36,7 +36,7 @@ const SymmetricalArrow = ({ className = "w-6 h-6" }: { className?: string }) => 
 
 const Logo = ({ onClick }: { onClick: () => void }) => (
   <div 
-    className="relative flex items-center cursor-pointer group px-4 py-1.5 border-2 border-slate-900 dark:border-white rounded-xl bg-white dark:bg-slate-950 transition-all duration-300 hover:shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(129,140,248,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none" 
+    className="relative flex items-center cursor-pointer group px-4 py-1.5 border-2 border-slate-900/10 dark:border-white/20 rounded-xl bg-white dark:bg-slate-950 transition-all duration-300 hover:shadow-[4px_4px_0px_0px_rgba(79,70,229,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(129,140,248,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none" 
     onClick={onClick}
   >
     <div className="flex items-baseline font-black tracking-tighter">
@@ -209,44 +209,36 @@ const App: React.FC = () => {
     ];
     const currentIndex = steps.findIndex(s => s.id === state);
     return (
-      <div className="w-full px-6 mt-4 mb-4">
-        <div className="bg-white dark:bg-slate-900 p-2 rounded-[24px] border border-slate-300 dark:border-slate-700 shadow-xl flex items-center justify-between gap-2 overflow-hidden">
+      <div className="w-full px-6 mt-2 mb-2">
+        <div className="bg-white dark:bg-slate-900 p-1.5 rounded-[20px] border border-slate-300 dark:border-slate-700 shadow-lg flex items-center justify-between gap-2 overflow-hidden">
           {steps.map((step, index) => {
             const isCompleted = index < currentIndex;
             const isActive = index === currentIndex;
             return (
               <React.Fragment key={step.id}>
-                <div className={`relative flex-1 flex items-center gap-4 px-5 py-3 rounded-[18px] transition-all duration-500
-                  ${isActive ? 'bg-indigo-600 shadow-lg' : 
+                <div className={`relative flex-1 flex items-center gap-3 px-4 py-2 rounded-[16px] transition-all duration-500
+                  ${isActive ? 'bg-indigo-600 shadow-md' : 
                     isCompleted ? 'bg-emerald-50 dark:bg-emerald-900/10' : 'bg-transparent'}
                 `}>
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-all duration-500
-                    ${isActive ? 'bg-white shadow-md' : 
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all duration-500
+                    ${isActive ? 'bg-white shadow-sm' : 
                       isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}
                   `}>
                     {isCompleted ? '✓' : step.icon}
                   </div>
                   <div className="flex flex-col">
-                    <span className={`text-[11px] font-black uppercase tracking-wider mb-0.5 transition-colors
+                    <span className={`text-[9px] font-black uppercase tracking-wider transition-colors
                       ${isActive ? 'text-indigo-100' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}
                     `}>
-                      PHASE 0{index + 1}
+                      0{index + 1}
                     </span>
-                    <span className={`text-[14px] font-bold tracking-tight transition-colors whitespace-nowrap
+                    <span className={`text-[12px] font-bold tracking-tight transition-colors whitespace-nowrap
                       ${isActive ? 'text-white' : isCompleted ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'}
                     `}>
                       {step.label}
                     </span>
                   </div>
-                  {isActive && <div className="absolute inset-0 rounded-[18px] ring-2 ring-indigo-500/20 animate-pulse pointer-events-none" />}
                 </div>
-                {index < steps.length - 1 && (
-                  <div className="flex gap-1.5 px-0.5">
-                    {[1, 2].map(i => (
-                      <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${index < currentIndex ? 'bg-emerald-300 dark:bg-emerald-800' : 'bg-slate-200 dark:bg-slate-800'}`} />
-                    ))}
-                  </div>
-                )}
               </React.Fragment>
             );
           })}
@@ -264,29 +256,17 @@ const App: React.FC = () => {
            </div>
         </div>
 
-        <h1 className="text-4xl md:text-7xl font-display text-slate-900 dark:text-white mb-6 md:mb-10 leading-[1.1] tracking-tighter pointer-events-auto">
+        <h1 className="text-4xl md:text-7xl font-display text-slate-900 dark:text-white mb-6 md:mb-8 leading-[1.1] tracking-tighter pointer-events-auto">
           Shortlisted? <br className="hidden md:block" /> 
           <span className="block mt-4 md:mt-6 text-indigo-600 dark:text-indigo-400 text-2xl md:text-5xl font-sans font-black tracking-tight leading-tight">
-            WAT isn’t separate from GD-PI. <br className="hidden md:block" /> It’s the first place your thinking gets evaluated.
+            Your thinking is evaluated before you speak.
           </span>
         </h1>
         
-        <div className="flex flex-col items-start gap-4 md:gap-5 mb-10 md:mb-12 w-fit mx-auto pointer-events-auto">
-          {[
-            "Timed WATs on recent & relevant topics",
-            "Clear feedback you can act on immediately"
-          ].map((text, idx) => (
-            <div key={idx} className="flex items-center gap-4 md:gap-5 text-lg md:text-xl font-bold text-slate-800 dark:text-slate-300 group/point cursor-default transition-all">
-               <div className="relative flex items-center justify-center shrink-0">
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-900 dark:bg-slate-950 flex items-center justify-center text-white dark:text-white shadow-lg border border-slate-700/50 z-10 group-hover/point:rotate-[360deg] transition-all duration-700">
-                    <SymmetricalArrow className="w-4 h-4 md:w-5 md:h-5" />
-                  </div>
-               </div>
-               <span className="relative text-left group-hover/point:text-indigo-600 dark:group-hover/point:text-indigo-400 transition-colors">
-                 {text}
-               </span>
-            </div>
-          ))}
+        <div className="mb-10 md:mb-12 pointer-events-auto">
+          <p className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-300">
+            Timed WATs. Relevant topics. Actionable feedback.
+          </p>
         </div>
       </div>
 
@@ -308,37 +288,43 @@ const App: React.FC = () => {
     const total = filteredFlashBriefs.length;
 
     return (
-      <div className="w-full px-6 py-2 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+      <div className="w-full px-6 py-1 animate-in fade-in slide-in-from-bottom-4 duration-700 relative overflow-hidden h-[calc(100vh-80px)]">
         <button 
           onClick={() => setState(AppState.WELCOME)}
-          className="absolute left-6 top-2 md:top-4 flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 text-slate-600 dark:text-slate-300 font-bold text-[12px] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm group z-20"
+          className="absolute left-6 top-1 md:top-2 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 text-slate-600 dark:text-slate-300 font-bold text-[11px] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm group z-20"
         >
           <div className="rotate-180 group-hover:-translate-x-1 transition-transform">
-            <SymmetricalArrow className="w-4 h-4" />
+            <SymmetricalArrow className="w-3 h-3" />
           </div>
-          <span>Back to Home</span>
+          <span>Home</span>
         </button>
 
-        <div className="flex flex-col items-center text-center mb-4 pt-10 md:pt-4">
-          <p className="text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-widest text-[11px] mb-0.5">MBA Preparation</p>
-          <h1 className="text-2xl md:text-3xl font-display text-slate-900 dark:text-white tracking-tight">FlashBriefs</h1>
+        <div className="flex flex-col items-center text-center mb-2 pt-8 md:pt-2">
+          <p className="text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-widest text-[10px] mb-0.5">MBA Preparation</p>
+          <h1 className="text-xl md:text-2xl font-display text-slate-900 dark:text-white tracking-tight">FlashBriefs</h1>
         </div>
 
-        <div className="flex justify-center flex-wrap gap-2 mb-4 no-scrollbar">
-          {['All', 'Economy & Business', 'Technology & AI', 'Public Policy & Governance', 'Society, Ethics & Global Affairs'].map(cat => (
-            <button
-              key={cat}
-              onClick={() => { setActiveFlashCategory(cat); setFlashcardIndex(0); setIsFlipped(false); }}
-              className={`px-4 py-2 rounded-full text-[12px] font-bold transition-all border whitespace-nowrap ${activeFlashCategory === cat ? 'bg-indigo-600 text-white border-transparent shadow-md' : 'bg-white dark:bg-dark-card text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-            >
-              {cat}
-            </button>
-          ))}
+        <div className="flex justify-center flex-wrap gap-1.5 mb-3 no-scrollbar max-w-4xl mx-auto">
+          {['All', 'Economy', 'Tech', 'Public Policy', 'Society'].map(catLabel => {
+             const actualCat = catLabel === 'Economy' ? 'Economy & Business' : 
+                               catLabel === 'Tech' ? 'Technology & AI' : 
+                               catLabel === 'Public Policy' ? 'Public Policy & Governance' : 
+                               catLabel === 'Society' ? 'Society, Ethics & Global Affairs' : 'All';
+             return (
+              <button
+                key={catLabel}
+                onClick={() => { setActiveFlashCategory(actualCat); setFlashcardIndex(0); setIsFlipped(false); }}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border whitespace-nowrap ${activeFlashCategory === actualCat ? 'bg-indigo-600 text-white border-transparent shadow-sm' : 'bg-white dark:bg-dark-card text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+              >
+                {catLabel}
+              </button>
+             );
+          })}
         </div>
 
         {total > 0 ? (
-          <div className="flex flex-col items-center pb-6">
-            <div className={`w-full max-w-2xl h-[340px] md:h-[380px] relative card-perspective group ${isFlipped ? 'is-flipped' : ''}`}>
+          <div className="flex flex-col items-center">
+            <div className={`w-full max-w-2xl h-[320px] md:h-[360px] relative card-perspective group ${isFlipped ? 'is-flipped' : ''}`}>
               <div 
                 onClick={() => setIsFlipped(!isFlipped)}
                 className={`relative w-full h-full transform-style-3d cursor-pointer flip-transition rounded-[32px] ${isFlipped ? 'rotate-y-180 shadow-[0_30px_60px_-15px_rgba(79,70,229,0.4)]' : 'shadow-2xl'}`}
@@ -348,45 +334,45 @@ const App: React.FC = () => {
                 {/* FRONT */}
                 <div className="absolute inset-0 backface-hidden bg-white dark:bg-dark-card border-[3px] border-slate-900 dark:border-indigo-400 rounded-[32px] p-6 md:p-8 flex flex-col items-center justify-center text-center overflow-hidden transition-colors">
                   <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500/10 dark:bg-indigo-500/20" />
-                  <div className="mb-4 px-5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-200 text-[11px] font-bold uppercase tracking-widest border border-indigo-100 dark:border-indigo-500/30">
+                  <div className="mb-3 px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-200 text-[10px] font-bold uppercase tracking-widest border border-indigo-100 dark:border-indigo-500/30">
                     {currentCard.category}
                   </div>
-                  <h3 className="text-xl md:text-3xl font-display text-slate-900 dark:text-white leading-tight tracking-tight px-4">
+                  <h3 className="text-lg md:text-2xl font-display text-slate-900 dark:text-white leading-tight tracking-tight px-4">
                     {currentCard.question}
                   </h3>
-                  <div className="mt-8 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest animate-pulse">
+                  <div className="mt-6 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest animate-pulse">
                     Tap to Flip
                   </div>
                 </div>
 
                 {/* BACK */}
-                <div className="absolute inset-0 backface-hidden rotate-y-180 bg-slate-950 dark:bg-slate-950 border-[3px] border-slate-900 dark:border-indigo-400 rounded-[32px] p-6 md:p-10 flex flex-col overflow-hidden transition-colors">
+                <div className="absolute inset-0 backface-hidden rotate-y-180 bg-slate-950 dark:bg-slate-950 border-[3px] border-slate-900 dark:border-indigo-400 rounded-[32px] p-6 md:p-8 flex flex-col overflow-hidden transition-colors">
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-indigo-500/40" />
                   
-                  <div className="flex-1 flex flex-col justify-center space-y-4 md:space-y-6">
-                    <div className="space-y-1">
-                      <div className="text-[9px] md:text-[10px] font-bold text-indigo-400 uppercase tracking-widest opacity-80">What it means</div>
-                      <p className="text-base md:text-lg text-white font-medium leading-tight tracking-tight line-clamp-2">
+                  <div className="flex-1 flex flex-col justify-center space-y-3 md:space-y-4">
+                    <div className="space-y-0.5">
+                      <div className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest opacity-80">What it means</div>
+                      <p className="text-sm md:text-base text-white font-medium leading-tight tracking-tight line-clamp-2">
                         {currentCard.what}
                       </p>
                     </div>
                     
-                    <div className="space-y-1">
-                      <div className="text-[9px] md:text-[10px] font-bold text-emerald-400 uppercase tracking-widest opacity-80">Why it matters</div>
-                      <p className="text-sm md:text-base text-slate-300 font-medium leading-tight line-clamp-2">
+                    <div className="space-y-0.5">
+                      <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest opacity-80">Why it matters</div>
+                      <p className="text-xs md:text-sm text-slate-300 font-medium leading-tight line-clamp-2">
                         {currentCard.why}
                       </p>
                     </div>
 
-                    <div className="space-y-1">
-                      <div className="text-[9px] md:text-[10px] font-bold text-amber-400 uppercase tracking-widest opacity-80">How it can be asked</div>
-                      <p className="text-sm md:text-base text-indigo-100 italic font-semibold leading-tight border-l-2 border-indigo-500/40 pl-4 line-clamp-2">
+                    <div className="space-y-0.5">
+                      <div className="text-[9px] font-bold text-amber-400 uppercase tracking-widest opacity-80">How it can be asked</div>
+                      <p className="text-xs md:text-sm text-indigo-100 italic font-semibold leading-tight border-l-2 border-indigo-500/40 pl-3 line-clamp-2">
                         {currentCard.askedAs}
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between text-[10px] font-bold text-white/40 uppercase tracking-widest border-t border-white/5 pt-4 shrink-0">
+                  <div className="mt-2 flex items-center justify-between text-[9px] font-bold text-white/40 uppercase tracking-widest border-t border-white/5 pt-3 shrink-0">
                     <div className="flex gap-4">
                       {currentCard.tag && <span className="text-indigo-400/80">{currentCard.tag}</span>}
                     </div>
@@ -398,35 +384,35 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-6 md:mt-8 flex items-center gap-6 md:gap-8">
+            <div className="mt-4 md:mt-6 flex items-center gap-6">
               <button 
                 disabled={flashcardIndex === 0}
                 onClick={() => { setFlashcardIndex(prev => prev - 1); setIsFlipped(false); }}
-                className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white dark:bg-dark-card border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-900 dark:text-white shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-20 rotate-180"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white dark:bg-dark-card border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-900 dark:text-white shadow-lg hover:scale-110 active:scale-95 transition-all disabled:opacity-20 rotate-180"
               >
-                <SymmetricalArrow className="w-5 h-5" />
+                <SymmetricalArrow className="w-4 h-4" />
               </button>
 
-              <div className="px-6 py-2 md:px-8 md:py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-indigo-500/20 rounded-[20px] shadow-sm text-center min-w-[120px] md:min-w-[140px]">
-                <div className="text-2xl md:text-3xl font-display text-slate-900 dark:text-white tracking-tighter flex items-center justify-center">
+              <div className="px-5 py-1.5 md:px-6 md:py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-indigo-500/20 rounded-[16px] shadow-sm text-center min-w-[100px] md:min-w-[120px]">
+                <div className="text-xl md:text-2xl font-display text-slate-900 dark:text-white tracking-tighter flex items-center justify-center">
                   {flashcardIndex + 1} 
-                  <span className="mx-2 text-slate-900 dark:text-white">/</span> 
+                  <span className="mx-1.5 text-slate-900 dark:text-white opacity-40">/</span> 
                   {total}
                 </div>
-                <div className="text-[10px] font-bold text-slate-400 dark:text-indigo-400/80 uppercase tracking-widest mt-0.5">BRIEFS</div>
+                <div className="text-[9px] font-bold text-slate-400 dark:text-indigo-400/80 uppercase tracking-widest">BRIEFS</div>
               </div>
 
               <button 
                 disabled={flashcardIndex === total - 1}
                 onClick={() => { setFlashcardIndex(prev => prev + 1); setIsFlipped(false); }}
-                className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-slate-950 dark:bg-white dark:text-slate-950 flex items-center justify-center text-white dark:text-slate-950 shadow-xl hover:scale-110 active:scale-95 transition-all disabled:opacity-20"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-950 dark:bg-white dark:text-slate-950 flex items-center justify-center text-white dark:text-slate-950 shadow-lg hover:scale-110 active:scale-95 transition-all disabled:opacity-20"
               >
-                <SymmetricalArrow className="w-5 h-5" />
+                <SymmetricalArrow className="w-4 h-4" />
               </button>
             </div>
           </div>
         ) : (
-          <div className="text-center py-10 md:py-20 bg-slate-50 dark:bg-dark-card rounded-[32px] border-2 border-dashed border-slate-200 dark:border-white/5">
+          <div className="text-center py-12 bg-slate-50 dark:bg-dark-card rounded-[24px] border-2 border-dashed border-slate-200 dark:border-white/5 mx-auto max-w-2xl">
             <h3 className="text-lg font-display text-slate-400 dark:text-slate-500">No briefs in this category yet.</h3>
           </div>
         )}
@@ -628,6 +614,8 @@ const App: React.FC = () => {
     </div>
   );
 
+  const navItemClass = "h-10 md:h-12 flex items-center justify-center rounded-full font-bold text-[12px] md:text-[13px] transition-all duration-300 border-2 border-slate-900/10 dark:border-white/20 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md hover:shadow-[3px_3px_0px_0px_rgba(79,70,229,1)] dark:hover:shadow-[3px_3px_0px_0px_rgba(129,140,248,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none";
+
   return (
     <div className="min-h-screen pb-4 bg-[#fcfdff] dark:bg-dark-bg transition-colors duration-500 font-sans">
       <nav className="w-full bg-white/70 dark:bg-dark-bg/70 backdrop-blur-3xl sticky top-0 z-50 border-b-2 border-slate-400 dark:border-slate-600">
@@ -639,28 +627,28 @@ const App: React.FC = () => {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setState(AppState.FLASHBRIEFS)}
-              className={`h-10 md:h-12 px-5 md:px-6 rounded-full font-bold text-[12px] md:text-[13px] transition-all flex items-center gap-2 animate-tilt-briefs ${state === AppState.FLASHBRIEFS ? 'bg-indigo-600 text-white shadow-lg' : 'bg-indigo-50/80 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'}`}
+              className={`${navItemClass} px-5 md:px-6 gap-2 animate-tilt-briefs ${state === AppState.FLASHBRIEFS ? 'ring-2 ring-indigo-500/30' : ''}`}
             >
-              <span>🎴</span> FlashBriefs
+              <span>🎴</span> <span className="text-slate-900 dark:text-white">FlashBriefs</span>
             </button>
 
             <button 
               onClick={() => setState(AppState.ABOUT)}
-              className={`h-10 md:h-12 px-5 md:px-7 rounded-full bg-white dark:bg-dark-card border border-slate-300 dark:border-white/10 text-[#334155] dark:text-slate-200 font-bold text-[12px] md:text-[13px] hover:scale-105 active:scale-95 transition-all shadow-sm ${state === AppState.ABOUT ? 'ring-2 ring-indigo-500/30 text-indigo-600 dark:text-indigo-400' : ''}`}
+              className={`${navItemClass} px-5 md:px-7 ${state === AppState.ABOUT ? 'ring-2 ring-indigo-500/30' : ''}`}
             >
-              About
+              <span className="text-slate-900 dark:text-white">About</span>
             </button>
 
-            <div className="h-10 md:h-12 p-1 flex items-center bg-slate-100 dark:bg-dark-card rounded-full border border-slate-300 dark:border-white/10 shadow-inner">
+            <div className={`${navItemClass} p-1 gap-1`}>
               <button 
                 onClick={() => setIsDarkMode(false)}
-                className={`h-full px-4 md:px-6 flex items-center justify-center rounded-full text-[10px] md:text-[11px] font-bold tracking-tight transition-all ${!isDarkMode ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-600'}`}
+                className={`h-full px-4 md:px-6 flex items-center justify-center rounded-full text-[10px] md:text-[11px] font-bold tracking-tight transition-all ${!isDarkMode ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-600'}`}
               >
                 Light
               </button>
               <button 
                 onClick={() => setIsDarkMode(true)}
-                className={`h-full px-4 md:px-6 flex items-center justify-center rounded-full text-[10px] md:text-[11px] font-bold tracking-tight transition-all ${isDarkMode ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`h-full px-4 md:px-6 flex items-center justify-center rounded-full text-[10px] md:text-[11px] font-bold tracking-tight transition-all ${isDarkMode ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 Dark
               </button>
@@ -671,7 +659,7 @@ const App: React.FC = () => {
 
       {renderProgressBar()}
 
-      <main className="mt-4">
+      <main className="mt-2">
         {isAnalyzing && renderAnalyzing()}
         {!isAnalyzing && state === AppState.WELCOME && renderWelcome()}
         {!isAnalyzing && state === AppState.PREPARING && renderPreparing()}
